@@ -1,0 +1,51 @@
+<!-- extend from base layout -->
+{% extends "base.html" %}
+{% import "macros/form.html" as forms %}
+{% block content %}
+    <h1 class="lead">Add Event</h1>
+    <form method="post" name="event">
+        <div class="form-group row">
+            <div class="col-md-10">
+                {{ forms.render_field(form.status) }}
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-10">
+                {{ forms.render_field(form.name) }}
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-12">
+                {{ forms.render_field(form.details) }}
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-6">
+                {{ forms.render_field(form.tlp) }}
+            </div>
+            <div class="col-md-6">
+                {{ forms.render_field(form.impact) }}
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-6">
+                {{ forms.render_field(form.source) }}
+            </div>
+            <div class="col-md-6">
+                {{ forms.render_field(form.likelihood) }}
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-6">
+                {{ forms.render_field(form.confidence) }}
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-10">
+                <button type="submit" class="btn btn-primary">Create</button>
+            </div>
+        </div>
+        {{ form.hidden_tag() }}
+    </form>
+{% endblock %}
+

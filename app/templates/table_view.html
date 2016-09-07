@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% import "macros/form.html" as forms %}
+{% block content %}
+    <div class="modal fade" id="fieldsModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title">Add Value</h4>
+          </div>
+          <div class="modal-body">
+            <form method="post" action="/fields/view/" name="modal_form" id="modal_form">
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        <input class="form-control form-control-warning" id="field_id" name="field_id" type="text" value="0" readonly="readonly">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        <input class="form-control form-control-warning" id="field_name" name="field_name" type="text" value="">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    </div>
+                </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+    <div class="row">
+        {% for title in fields.keys() %}
+            <div class="col-md-12">
+                <h1 class="lead">{{ title }}</h1>
+                <button type="button" class="btn btn-primary" id="addButton" data-toggle="modal" data-target="#fieldsModal" data-tablename="{{ fields[title][1] }}">Add New</button>
+                <table id="event_table" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    {% for row in fields[title][0] %}
+                        <tr>
+                            <th scope="row">{{ row.id }}</th>
+                            <td>{{ row.name }}</td>
+                            <td data-tablename="{{ fields[title][2] }}">
+                                <button type="button" id="editRow" class="btn btn-primary" data-toggle="modal" data-target="#fieldsModal" data-tablename="{{ fields[title][1] }}">Edit</button>
+                                <button type="button" id="delRow" class="btn btn-primary" data-toggle="modal" data-target="#fieldsModal" data-tablename="{{ fields[title][1] }}">Delete</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script type="text/javascript">
+
+        $(document).delegate('#addButton', 'click', function(){
+            var tn = $(this).data('tablename');
+            var uri = '/admin/table/' + tn + '/add'
+            $('#modal_form').attr('action', uri)
+            $('#field_name').prop("readonly", false);
+            $('#field_id').prop("type", "hidden");
+            $('#field_id').val(0);
+            $('#field_name').val('');
+        });
+
+
+        $(document).delegate('#editRow', 'click', function(){
+            var tn = $(this).data('tablename');
+            var row_id = $(this).closest('tr').find('th').eq(0).text();
+            var row_name = $(this).closest('tr').find('td').eq(0).text();
+            var uri = '/admin/table/' + tn + '/edit'
+            $('#modal_form').attr('action', uri)
+            $('.modal-title').text('Edit Name')
+            $('#field_id').val(row_id);
+            $('#field_name').val(row_name);
+            $('#field_name').prop("readonly", false);
+            $('#field_id').prop("type", "text");
+        });
+
+        $(document).delegate('#delRow', 'click', function(){
+            var tn = $(this).data('tablename');
+            var row_id = $(this).closest('tr').find('th').eq(0).text();
+            var row_name = $(this).closest('tr').find('td').eq(0).text();
+            var uri = '/admin/table/' + tn + '/delete'
+            $('#modal_form').attr('action', uri)
+            $('.modal-title').text('Confirm Delete')
+            $('#field_id').val(row_id);
+            $('#field_name').val(row_name);
+            $('#field_name').prop("readonly", true);
+            $('#field_id').prop("type", "text");
+        });
+    </script>
+{% endblock %}

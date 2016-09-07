@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="lead">Recent Events</h1>
+            <table id="event_table" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Source</th>
+                        <th>TLP</th>
+                        <th>Confidence</th>
+                        <th>Creation date</th>
+                    </tr>
+                </thead>
+
+                {% for event in events %}
+                    <tr>
+                        <th scope="row"><a href="/event/view/{{ event.id }}">{{ event.id }}</a></th>
+                        <td>{{ event.name }}</td>
+                        <td>{{ event.source.name }}</td>
+                        <td>{{ event.tlp.name }}</td>
+                        <td>{{ event.confidence }}</td>
+                        <td>{{ event.created.strftime('%Y-%m-%d') }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+{% endblock %}

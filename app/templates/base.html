@@ -1,0 +1,71 @@
+<html>
+    <head>
+        {% if title %}
+            <title>{{ title }} - OSTIP</title>
+        {% else %}
+            <title>Welcome to OSTIP</title>
+        {% endif %}
+        <link rel="stylesheet" href="/static/css/bootstrap.css">
+        <link rel="stylesheet" href="/static/css/bootstrap-theme.min.css">
+        <link rel="stylesheet" href="/static/css/fixes.css">
+        {% block extra_stylesheets %} {% endblock %}
+        <script src="/static/js/jquery-2.1.3.js"></script>
+        <script src="/static/js/bootstrap.js"></script>
+
+    </head>
+
+    <body>
+        <nav class="navbar navbar-inverse">
+            <div class="container-fluid">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                            data-target="#bs-example-navbar-collapse-1">
+                        <span class="sr-only">Toggle navigation</span>
+                    </button>
+                    <a class="navbar-brand" href="/">OSTIP</a>
+                </div>
+
+                <!-- Collect the nav links, forms, and other content for toggling -->
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                    <ul class="nav navbar-nav">
+                        <li {% if request.path == '/index' or  request.path == '/'%} class="active" {% endif %}>
+                            <a href="/index">Home</a>
+                        </li>
+                        <li {% if request.path == '/event/add' %} class="active" {% endif %}>
+                            <a href="/event/add">Add Event</a>
+                        </li>
+                        <li {% if request.path == '/indicator/pending/view' %} class="active" {% endif %}>
+                            <a href="/indicator/pending/view">Pending Indicators</a>
+                        </li>
+                        <li {% if request.path == '/admin/table/view' %} class="active" {% endif %}>
+                            <a href="/admin/table/view">Admin</a>
+                        </li>
+                    </ul>
+                </div>
+                <!-- /.navbar-collapse -->
+            </div>
+            <!-- /.container-fluid -->
+        </nav>
+
+        <div class="container-fluid">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-danger" role="alert">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </div>
+
+        <footer id="footer">
+            <div class="container">
+                <hr>
+                <p class="text-center">OSTIP Example App</p>
+            </div>
+        </footer>
+        {% block extra_javascripts %} {% endblock %}
+    </body>
+
+</html>

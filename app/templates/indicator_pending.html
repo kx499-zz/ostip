@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block extra_stylesheets %}
+  <link href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/select/1.2.0/css/select.dataTables.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="lead">Recent Events</h1>
+            <table id="dt_110x" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Indicator</th>
+                        <th>Type</th>
+                        <th>Control</th>
+                        <th>Comment</th>
+                        <th>Enrich</th>
+                        <th>Event</th>
+                        <th>Creation date</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+  <script src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/select/1.2.0/js/dataTables.select.min.js"></script>
+  <script type="text/javascript" charset="utf-8">
+    $(document).ready(function(){
+      var table = $('#dt_110x').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: "{{ url_for('pending_data') }}",
+        deferRender: true,
+        columnDefs: [ {
+            orderable: false,
+            className: 'select-checkbox',
+            targets:   0
+        } ],
+        select: {
+            style:    'multi',
+            selector: 'tr'
+        },
+        order: [[ 1, 'asc' ]]
+      });
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% import "macros/form.html" as forms %}
+{% block content %}
+
+    {% include "modals/form_event_ioc_add.html" %}
+    {% include "modals/form_event_edit.html" %}
+    {% include "modals/form_event_note_add.html" %}
+
+    <script type="text/javascript">
+        $(document).delegate('button :submit', 'click', function(){
+            var indicatorFormErrors = {% if form.errors %}true{% else %}false{% endif %};
+            var eventFormErrors = {% if ev_form.errors %}true{% else %}false{% endif %};
+            var noteFormErrors = {% if nt_form.errors %}true{% else %}false{% endif %};
+            if (indicatorFormErrors) {
+                $('#myModal').modal('show');
+            }
+            if (eventFormErrors) {
+                $('#myEvModal').modal('show');
+            }
+            if (noteFormErrors) {
+                $('#myNoteModal').modal('show');
+            }
+        });
+    </script>
+
+
+
+
+    <div class="row">
+        <div class="col-md-9">
+            <dl class="dl-horizontal">
+                <dt>Name</dt>
+                <dd>{{ event.name }}</dd>
+                <dt>Details</dt>
+                <dd><pre class="pre-scrollable">{{ event.details }}</pre></dd>
+            </dl>
+        </div>
+        <div class="col-md-3">
+            <dl class="dl-horizontal col-md-offset-0">
+                <dt>Created</dt>
+                <dd>{{ event.created.strftime('%Y-%m-%d') }}</dd>
+                <dt>Status</dt>
+                <dd>{{ event.status.name }}</dd>
+                <dt>Confidence</dt>
+                <dd>{{ event.confidence }}</dd>
+                <dt>Source</dt>
+                <dd>{{ event.source.name }}</dd>
+                <dt>TLP</dt>
+                <dd>{{ event.tlp.name }}</dd>
+                <dt>Impact</dt>
+                <dd>{{ event.impact.name }}</dd>
+                <dt>Likelihood</dt>
+                <dd>{{ event.likelihood.name }}</dd>
+            </dl>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-3">
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal">Add Indicator</button>
+        </div>
+        <div class="col-md-3">
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myEvModal">Edit Event</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="lead">Associated Indicators</h1>
+            <table id="indicator_table" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>First Seen</th>
+                        <th>Last Seen</th>
+                        <th>Type</th>
+                        <th>Control</th>
+                        <th>Data</th>
+                        <th>Related Event</th>
+                    </tr>
+                </thead>
+
+                {% for indicator in event.indicators if not indicator.pending %}
+                    <tr>
+                        <th scope="row">{{ indicator.id }} </th>
+                        <td>{{ indicator.first_seen.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ indicator.last_seen.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ indicator.itype.name }}</td>
+                        <td>{{ indicator.control.name }}</td>
+                        <td>{{ indicator.ioc }}</td>
+                        <td>
+                            {% for r_i in indicator.rel_indicators %}
+                                <a href="/event/view/{{ r_i.rel_event_id }}">{{ r_i.rel_event_id }}</a>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-3">
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myNoteModal">Add Note</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="lead">Analyst Notes</h1>
+                {% for note in event.notes %}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">{{ note.created.strftime('%Y-%m-%d %H:%M') }}</h3>
+                        </div>
+                        <div class="panel-body">
+                            {% autoescape false %}
+                                {{ note.details }}
+                            {% endautoescape %}
+                        </div>
+                    </div>
+                {% endfor %}
+        </div>
+    </div>
+{% endblock %}
