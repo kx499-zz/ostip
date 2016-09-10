@@ -1,5 +1,6 @@
 from app import db
 import datetime
+from sqlalchemy.ext.hybrid import hybrid_property
 
 
 class Event(db.Model):
@@ -58,10 +59,13 @@ class Indicator(db.Model):
 
     control = db.relationship('Control', foreign_keys=control_id)
     itype = db.relationship('Itype', foreign_keys=itype_id)
-
     rel_indicators = db.relationship('Links', backref='indicator', lazy='dynamic')
 
     __table_args__ = (db.UniqueConstraint("ioc", "event_id"), )
+
+    @hybrid_property
+    def rel_list(self):
+        return ','.join([str(i.rel_event_id) for i in self.rel_indicators])
 
     def __init__(self, event_id, ioc, comment, control, itype, pending=False, enrich=None):
         self.event_id = event_id

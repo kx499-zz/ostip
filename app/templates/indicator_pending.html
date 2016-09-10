@@ -3,27 +3,34 @@
 {% block extra_stylesheets %}
   <link href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.css" rel="stylesheet">
   <link href="https://cdn.datatables.net/select/1.2.0/css/select.dataTables.min.css" rel="stylesheet">
+  <link href="https://gyrocode.github.io/jquery-datatables-checkboxes/1.0.3/css/dataTables.checkboxes.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
     <div class="row">
         <div class="col-md-12">
-            <h1 class="lead">Recent Events</h1>
-            <table id="dt_110x" class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Indicator</th>
-                        <th>Type</th>
-                        <th>Control</th>
-                        <th>Comment</th>
-                        <th>Enrich</th>
-                        <th>Event</th>
-                        <th>Creation date</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <h1 class="lead">Pending Indicators</h1>
+            <form id="frm-example" action="/indicator/pending/view" method="POST">
+                <table id="dt_110x" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox">
+                            </th>
+                            <th>Indicator</th>
+                            <th>Type</th>
+                            <th>Control</th>
+                            <th>Comment</th>
+                            <th>Enrich</th>
+                            <th>Event Id</th>
+                            <th>Event</th>
+                            <th>Creation date</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
         </div>
     </div>
 {% endblock %}
@@ -31,24 +38,55 @@
 {% block extra_javascripts %}
   <script src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/select/1.2.0/js/dataTables.select.min.js"></script>
+  <script src="https://gyrocode.github.io/jquery-datatables-checkboxes/1.0.3/js/dataTables.checkboxes.min.js"></script>
   <script type="text/javascript" charset="utf-8">
     $(document).ready(function(){
-      var table = $('#dt_110x').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: "{{ url_for('pending_data') }}",
-        deferRender: true,
-        columnDefs: [ {
-            orderable: false,
-            className: 'select-checkbox',
-            targets:   0
-        } ],
-        select: {
-            style:    'multi',
-            selector: 'tr'
-        },
-        order: [[ 1, 'asc' ]]
-      });
+        var table = $('#dt_110x').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: "{{ url_for('pending_data', status='pending', event_id=0) }}",
+            deferRender: true,
+            columnDefs: [ {
+                targets:   0,
+                'checkboxes': {
+                   'selectRow': true
+                }
+            } ],
+            select: {
+                style:    'multi'
+            },
+            order: [[ 1, 'asc' ]]
+        });
+
+        // Handle form submission event
+        $('#frm-example').on('submit', function(e){
+          var form = this;
+          var rows_selected = table.column(0).checkboxes.selected();
+          var rowData = table.rows().data();
+
+          // Iterate over all selected checkboxes
+          $.each(rowData, function(index, rowArr){
+             // Create a hidden element
+             var indId = rowArr[0];
+             var evId = rowArr[6];
+             var attName = '';
+             if (rows_selected.indexOf(indId) == -1) {
+                attName = 'not_selected';
+             } else {
+                attName = 'selected';
+             };
+
+             $(form).append(
+                 $('<input>')
+                    .attr('type', 'hidden')
+                    .attr('name', attName)
+                    .val(indId)
+             );
+          });
+
+        });
     });
+
+
   </script>
 {% endblock %}

@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 {% import "macros/form.html" as forms %}
+
+{% block extra_stylesheets %}
+  <link href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/select/1.2.0/css/select.dataTables.min.css" rel="stylesheet">
+  <link href="https://gyrocode.github.io/jquery-datatables-checkboxes/1.0.3/css/dataTables.checkboxes.css" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 
     {% include "modals/form_event_ioc_add.html" %}
@@ -69,30 +76,17 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>First Seen</th>
-                        <th>Last Seen</th>
+                        <th>Data</th>
                         <th>Type</th>
                         <th>Control</th>
-                        <th>Data</th>
+                        <th>Comment</th>
+                        <th>Enrich</th>
+                        <th>First Seen</th>
+                        <th>Last Seen</th>
                         <th>Related Event</th>
                     </tr>
                 </thead>
-
-                {% for indicator in event.indicators if not indicator.pending %}
-                    <tr>
-                        <th scope="row">{{ indicator.id }} </th>
-                        <td>{{ indicator.first_seen.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ indicator.last_seen.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ indicator.itype.name }}</td>
-                        <td>{{ indicator.control.name }}</td>
-                        <td>{{ indicator.ioc }}</td>
-                        <td>
-                            {% for r_i in indicator.rel_indicators %}
-                                <a href="/event/view/{{ r_i.rel_event_id }}">{{ r_i.rel_event_id }}</a>
-                            {% endfor %}
-                        </td>
-                    </tr>
-                {% endfor %}
+                <tbody></tbody>
             </table>
         </div>
     </div>
@@ -118,4 +112,37 @@
                 {% endfor %}
         </div>
     </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+  <script src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/select/1.2.0/js/dataTables.select.min.js"></script>
+  <script src="https://gyrocode.github.io/jquery-datatables-checkboxes/1.0.3/js/dataTables.checkboxes.min.js"></script>
+  <script type="text/javascript" charset="utf-8">
+    $(document).ready(function(){
+        var table = $('#indicator_table').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: "{{ url_for('pending_data', status='approved', event_id=event.id) }}",
+            deferRender: true,
+            searching: false,
+            columnDefs: [ {
+                targets:   8,
+                "data": null,
+                "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
+                    var arr = oData[8].split(",");
+                    var links = "";
+                    for (var i=0; i < arr.length; i++) {
+                        links += "<a href='/event/view/" + arr[i] + "'>" + arr[i] + "</a> ";
+                    };
+                    console.log(arr);
+                    $(nTd).html(links);
+                 }
+            } ],
+            order: [[ 1, 'asc' ]]
+        });
+    });
+
+
+  </script>
 {% endblock %}

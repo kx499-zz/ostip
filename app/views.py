@@ -146,12 +146,28 @@ def view_edit_table(table_name, action):
     return redirect('/admin/table/view')
 
 
-@app.route('/indicator/pending/view')
+@app.route('/indicator/pending/view', methods=['GET', 'POST'])
 def indicator_pending():
+    if request.method == 'POST':
+        update_list = [int(i) for i in request.form.getlist('selected')]
+        del_list = [int(i) for i in request.form.getlist('not_selected')]
+
+        upd_query = db.session.query(Indicator).filter(Indicator.id.in_(update_list))
+        upd_query.update({'pending':False}, synchronize_session=False)
+        del_query = db.session.query(Indicator).filter(Indicator.id.in_(del_list))
+        del_query.delete(synchronize_session=False)
+        db.session.commit()
+
+        ioc_query = Indicator.query.with_entities(Indicator.id, Indicator.event_id, Indicator.ioc)
+        ioc_list = ioc_query.filter(Indicator.id.in_(update_list)).all()
+        _correlate(ioc_list)
+
+        return redirect('/indicator/pending/view')
     return render_template('indicator_pending.html', title='Pending Indicators')
 
-@app.route('/indicator/pending/data')
-def pending_data():
+
+@app.route('/indicator/<status>/data/<int:event_id>')
+def pending_data(status, event_id):
     """Return server side data."""
     # defining columns
     columns = []
@@ -161,11 +177,18 @@ def pending_data():
     columns.append(ColumnDT('control.name'))
     columns.append(ColumnDT('comment'))
     columns.append(ColumnDT('enrich'))
-    columns.append(ColumnDT('event.name'))
     columns.append(ColumnDT('first_seen'))
 
-    # defining the initial query depending on your purpose
-    query = db.session.query(Indicator).filter(Indicator.pending == True)
+    if status == 'pending':
+        columns.append(ColumnDT('event_id'))
+        columns.append(ColumnDT('event.name'))
+        query = db.session.query(Indicator).filter(Indicator.pending == True)
+    elif status == 'approved':
+        columns.append(ColumnDT('last_seen'))
+        columns.append(ColumnDT('rel_list'))
+        query = db.session.query(Indicator).filter(Indicator.event_id == event_id).filter(Indicator.pending == False )
+    else:
+        query = db.session.query(Indicator).filter(Indicator.pending == True)
 
     # instantiating a DataTable for the query and table needed
     rowTable = DataTables(request.args, Indicator, query, columns)
@@ -189,7 +212,6 @@ def indicator_bulk_add():
         return json.dumps({'results': 'error', 'data': '%s' % e})
 
     if all(k in pld for k in req_keys) and isinstance(pld['event_id'], (int, long)):
-        print 'after if'
         # load related stuff
         ioc_list, cont_id, type_id = _load_related_data(pld)
 
@@ -202,7 +224,6 @@ def indicator_bulk_add():
             if ind_id:
                 ind = Indicator.query.get(ind_id)
                 ind.last_seen = datetime.datetime.utcnow()
-                print '%s' % ind.last_seen
             else:
                 ind = Indicator(pld['event_id'], val, desc, cont_id, type_id, pld['pending'], _enrich_data(pld))
                 db.session.add(ind)
