@@ -13,5 +13,6 @@ app.db
 db_repository/
 .idea/
 .DS_Store
+redis-stable/
 
 
