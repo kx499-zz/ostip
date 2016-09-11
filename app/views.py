@@ -82,7 +82,6 @@ def event_view(event_id):
     ev_form.confidence.choices = [(i, '%s' % i) for i in xrange(0, 100, 5)]
     nt_form = NoteForm()
     nt_form.event_id.data = event_id
-    print(nt_form.errors)
     if ind_form.validate_on_submit():
         flash(_indicator_add(ind_form))
         return redirect('/event/view/%s' % event_id)
@@ -90,7 +89,6 @@ def event_view(event_id):
         flash(_event_edit(ev_form, ev))
         return redirect('/event/view/%s' % event_id)
     elif nt_form.validate_on_submit():
-        print "nt form validate"
         flash(_note_add(nt_form))
         return redirect('/event/view/%s' % event_id)
     return render_template('event_view.html',

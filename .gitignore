@@ -1,0 +1,17 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+#virtenv
+bin/
+include/
+lib/
+
+#app specific stuff
+app.db
+db_repository/
+.idea/
+.DS_Store
+
+
