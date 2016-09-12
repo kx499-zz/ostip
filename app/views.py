@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from app import app
 from .forms import EventForm, IndicatorForm, NoteForm
 from .models import Event, Indicator, Itype, Control, Links, Level, Likelihood, Source, Status, Tlp, Note, db
+from .utils import _load_related_data, _correlate, _enrich_data
 import json
 import datetime
 from datatables import ColumnDT, DataTables
@@ -235,35 +236,3 @@ def indicator_bulk_add():
 
     res_json = {'results': 'success'}
     return json.dumps(res_json)
-
-##
-# Helpers
-##
-
-
-def _load_related_data(data):
-    ioc = {}
-    items = Indicator.query.filter_by(event_id=data['event_id']).all()
-    [ioc.update({item.ioc: item.id}) for item in items]
-    control = Control.query.filter_by(name=data['control']).first()
-    data_type = Itype.query.filter_by(name=data['data_type']).first()
-
-    return ioc, control, data_type
-
-
-def _correlate(indicator_list):
-    # not yet implemented
-    for ind_id, ev_id, val in indicator_list:
-        for i in Indicator.query.filter_by(ioc=val).all():
-            if i.id != ind_id:
-                link = Links(ev_id, ind_id, i.event_id, i.id)
-                link2 = Links(i.event_id, i.id, ev_id, ind_id)
-                db.session.add(link)
-                db.session.add(link2)
-    db.session.commit()
-
-def _enrich_data(data):
-    results = None
-    if data['pending']:
-        #impliment
-        return "Not Implemented Yet"

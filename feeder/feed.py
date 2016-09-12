@@ -1,8 +1,11 @@
-#!/usr/bin/env python
 import json
+import os
+from app.utils import _add_indicators
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 
-FEED_CONFIG = 'feed.json'
+
+FEED_CONFIG = os.path.join(basedir, 'feed.json')
 
 
 def _dynamic_load(class_name):
@@ -15,6 +18,9 @@ def _dynamic_load(class_name):
     return cls
 
 
+
+
+
 class Feed:
 
     def __init__(self):
@@ -23,12 +29,13 @@ class Feed:
                 json_data = F.read()
                 self.configs = json.loads(json_data)
         except Exception, e:
-            print 'Error Loading File'
+            print 'Error Loading File: %s' % e
 
     def process_all(self):
-        logs = {}
+        inserted = []
         for config in self.configs:
             modules = config.get('modules')
+            event_id = config.get('event_id')
             if not modules:
                 print "bad json"
                 continue
@@ -54,10 +61,14 @@ class Feed:
                     print 'error loading data'
                     continue
 
-                parser = parse_cls(parse_config, 1, data)
-                logs[config['name']] = parser.run()
+                parser = parse_cls(parse_config, event_id, data)
+                logs = parser.run()
+                inserted += _add_indicators(logs)
 
-        return logs
+        return inserted
+
+
+
 
 
 

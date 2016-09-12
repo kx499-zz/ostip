@@ -4,7 +4,7 @@ import re
 import itertools
 import datetime
 import csv
-from logentry import LogEntry
+from logentry import ResultsDict, LogEntry
 
 
 class ParseCsv:
@@ -46,7 +46,7 @@ class ParseCsv:
             **self.dialect
         )
 
-        entries = []
+        results = ResultsDict(self.event, self.control, self.data_types).new()
         for row in reader:
             for data_type in self.data_types:
                 desc_val = []
@@ -57,12 +57,10 @@ class ParseCsv:
                     tmp = row.get('desc_%s' % i)
                     if tmp:
                         desc_val.append(tmp)
-                entry = LogEntry(self.event, data_type, ioc, self.control, ';'.join(desc_val)).new()
-                if 'date' in row:
-                    entry['date'] = row['date']
-                entries.append(entry)
-
-        return entries
+                log_date = row.get('date')
+                entry = LogEntry(log_date, ioc, ';'.join(desc_val)).new()
+                results['indicators'][data_type].append(entry)
+        return results
 
 
 class ParseText:

@@ -1,7 +1,7 @@
 [{
   "name": "SSL IPBL",
   "frequency": "* * * * 1",
-  "event_id": 1,
+  "event_id": 2,
   "modules": {
     "collect": {
       "name": "collect.GetHttp",
@@ -19,7 +19,7 @@
       "config":{
         "fieldnames": ["indicator_ipv4", "port", "desc_1"],
         "data_types": ["ipv4"],
-        "control": "inbound"
+        "control": "Inbound"
       }
     }
   }
