@@ -181,15 +181,18 @@ def pending_data(status, event_id):
     if status == 'pending':
         columns.append(ColumnDT('event_id'))
         columns.append(ColumnDT('event.name'))
-        query = db.session.query(Indicator).filter(Indicator.pending == True)
+        query = db.session.query(Indicator).join(Control).join(Event).join(Itype).filter(Indicator.pending == True)
     elif status == 'approved':
         columns.append(ColumnDT('last_seen'))
         columns.append(ColumnDT('rel_list'))
         query = db.session.query(Indicator).join(Control).join(Itype).filter(Indicator.event_id == event_id).filter(Indicator.pending == False )
     else:
-        query = db.session.query(Indicator).filter(Indicator.pending == True)
+        query = db.session.query(Indicator).join(Control).join(Itype).filter(Indicator.pending == True)
 
     # instantiating a DataTable for the query and table needed
+
+    a = request.args.get('search[value]')
+    print a, type(a), type(1)
     rowTable = DataTables(request.args, Indicator, query, columns)
 
     # returns what is needed by DataTable
