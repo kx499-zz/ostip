@@ -14,5 +14,7 @@ db_repository/
 .idea/
 .DS_Store
 redis-stable/
+*.log
 
 
+celerybeat-schedule

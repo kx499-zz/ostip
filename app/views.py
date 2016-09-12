@@ -185,7 +185,7 @@ def pending_data(status, event_id):
     elif status == 'approved':
         columns.append(ColumnDT('last_seen'))
         columns.append(ColumnDT('rel_list'))
-        query = db.session.query(Indicator).filter(Indicator.event_id == event_id).filter(Indicator.pending == False )
+        query = db.session.query(Indicator).join(Control).join(Itype).filter(Indicator.event_id == event_id).filter(Indicator.pending == False )
     else:
         query = db.session.query(Indicator).filter(Indicator.pending == True)
 
@@ -236,3 +236,14 @@ def indicator_bulk_add():
 
     res_json = {'results': 'success'}
     return json.dumps(res_json)
+
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return render_template('500.html'), 500
