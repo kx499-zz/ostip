@@ -158,6 +158,7 @@ class Itype(db.Model):
     __tablename__ = "itype"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
+    regex = db.Column(db.String(255))
 
     def __repr__(self):
         return '<Itype %r>' % (self.name)

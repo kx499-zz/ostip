@@ -14,9 +14,9 @@ if not app.debug:
     from logging.handlers import RotatingFileHandler
 
     #acces logs
-    logger = logging.getLogger('werkzeug')
+    a_logger = logging.getLogger('werkzeug')
     handler = RotatingFileHandler('tmp/ostip_access.log', 'a', 1 * 1024 * 1024, 10)
-    logger.addHandler(handler)
+    a_logger.addHandler(handler)
 
     #error/app info logs
     file_handler = RotatingFileHandler('tmp/ostip.log', 'a', 1 * 1024 * 1024, 10)

@@ -3,7 +3,7 @@ import requests
 json = {
   "event_id": 3,
   "control": "Inbound",
-  "data_type": "ipv4",
+  "data_types": "ipv4",
   "pending": True,
   "data": [ ["1.1.1.4", "test ip"], ["1.1.1.8", "test ip"], ["1.1.1.9", "test ip"], ["1.1.1.10", "test ip"] ]
 }

@@ -24,7 +24,7 @@ def pull_feeds():
     now = datetime.now()
     f = Feed()
     results = f.process_all()
-    print "pulled feeds"
+    logger.info("pulled feeds")
     logger.info("Task finished: total inserted %i" % len(results))
 
 @task_postrun.connect

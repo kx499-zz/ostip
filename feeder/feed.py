@@ -1,9 +1,8 @@
 import json
 import os
-from app.utils import _add_indicators
+from app.utils import _add_indicators, _valid_json
+from app import app
 basedir = os.path.abspath(os.path.dirname(__file__))
-
-
 
 FEED_CONFIG = os.path.join(basedir, 'feed.json')
 
@@ -18,9 +17,6 @@ def _dynamic_load(class_name):
     return cls
 
 
-
-
-
 class Feed:
 
     def __init__(self):
@@ -32,13 +28,14 @@ class Feed:
             print 'Error Loading File: %s' % e
 
     def process_all(self):
-        inserted = []
+        results = {}
+        fields = ['name', 'frequency', 'event_id', 'modules']
         for config in self.configs:
+            if not _valid_json(fields, config):
+                app.logger.warn('Bad config from feed.json')
+                continue
             modules = config.get('modules')
             event_id = config.get('event_id')
-            if not modules:
-                print "bad json"
-                continue
 
             if 'parse' in modules.keys() and 'collect' in modules.keys():
                 try:
@@ -63,9 +60,14 @@ class Feed:
 
                 parser = parse_cls(parse_config, event_id, data)
                 logs = parser.run()
-                inserted += _add_indicators(logs)
+                results[config.get('name','n/a')] = _add_indicators(logs)
+            elif 'custom' in modules.keys():
+                pass
+            else:
+                app.logger.warn('Bad config from feed.json in modules')
+                continue
 
-        return inserted
+        return results
 
 
 
