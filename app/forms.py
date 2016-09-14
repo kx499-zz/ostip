@@ -35,7 +35,9 @@ class ControlForm(Form):
 
 
 class ItypeForm(Form):
-    name = StringField('Name', validators=[DataRequired()])
+    field_id = IntegerField()
+    field_name = StringField('Name', validators=[DataRequired()])
+    field_regex = StringField('Regex')
 
 
 class LevelForm(Form):

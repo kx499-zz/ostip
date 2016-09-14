@@ -160,6 +160,10 @@ class Itype(db.Model):
     name = db.Column(db.String(64))
     regex = db.Column(db.String(255))
 
+    def __init__(self, name, regex):
+        self.name = name
+        self.regex = regex
+
     def __repr__(self):
         return '<Itype %r>' % (self.name)
 

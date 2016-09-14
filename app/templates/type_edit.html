@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% import "macros/form.html" as forms %}
+{% block content %}
+    <div class="modal fade" id="fieldsModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title">Add Value</h4>
+          </div>
+          <div class="modal-body">
+            <form method="post" action="/admin/data_types/view/" name="modal_form" id="modal_form">
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        {{ forms.render_field(form.field_id) }}
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        {{ forms.render_field(form.field_name) }}
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        {{ forms.render_field(form.field_regex) }}
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    </div>
+                </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+    <div class="row">
+            <div class="col-md-12">
+                <h1 class="lead">{{ title }}</h1>
+                <button type="button" class="btn btn-primary" id="addButton" data-toggle="modal" data-target="#fieldsModal">Add New</button>
+                <table id="event_table" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Regex</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    {% for dt in data_types %}
+                        <tr>
+                            <th scope="row">{{ dt.id }}</th>
+                            <td>{{ dt.name }}</td>
+                            <td>{{ dt.regex }}</td>
+                            <td data-tablename="data_type">
+                                <button type="button" id="editRow" class="btn btn-primary" data-toggle="modal" data-target="#fieldsModal">Edit</button>
+                                <button type="button" id="delRow" class="btn btn-primary" data-toggle="modal" data-target="#fieldsModal">Delete</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+    </div>
+
+    <script type="text/javascript">
+
+        $(document).delegate('#addButton', 'click', function(){
+            var uri = '/admin/data_types/add'
+            $('#modal_form').attr('action', uri)
+            $('#name').prop("readonly", false);
+            $('#regex').prop("readonly", false);
+            $('#field_id').prop("type", "hidden");
+            $('#field_id').val(0);
+            $('#field_name').val('');
+            $('#field_regex').val('');
+        });
+
+
+        $(document).delegate('#editRow', 'click', function(){
+            var row_id = $(this).closest('tr').find('th').eq(0).text();
+            var row_name = $(this).closest('tr').find('td').eq(0).text();
+            var row_regex = $(this).closest('tr').find('td').eq(1).text();
+            var uri = '/admin/data_types/edit'
+            $('#modal_form').attr('action', uri)
+            $('.modal-title').text('Edit Name')
+            $('#field_id').val(row_id);
+            $('#field_id').prop("type", "text");
+            $('#field_name').val(row_name);
+            $('#field_name').prop("readonly", false);
+            $('#field_regex').val(row_regex);
+            $('#field_regex').prop("readonly", false);
+        });
+
+        $(document).delegate('#delRow', 'click', function(){
+            var row_id = $(this).closest('tr').find('th').eq(0).text();
+            var row_name = $(this).closest('tr').find('td').eq(0).text();
+            var row_regex = $(this).closest('tr').find('td').eq(1).text();
+            var uri = '/admin/data_tables/delete'
+            $('#modal_form').attr('action', uri)
+            $('.modal-title').text('Confirm Delete')
+            $('#field_id').val(row_id);
+            $('#field_id').prop("type", "text");
+            $('#field_name').val(row_name);
+            $('#field_name').prop("readonly", true);
+            $('#field_regex').val(row_regex);
+            $('#field_regex').prop("readonly", true);
+            
+        });
+    </script>
+{% endblock %}

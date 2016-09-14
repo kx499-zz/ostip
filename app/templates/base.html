@@ -39,7 +39,10 @@
                             <a href="/indicator/pending/view">Pending Indicators</a>
                         </li>
                         <li {% if request.path == '/admin/table/view' %} class="active" {% endif %}>
-                            <a href="/admin/table/view">Admin</a>
+                            <a href="/admin/table/view">Table Maint.</a>
+                        </li>
+                        <li {% if request.path == '/admin/data_types/view' %} class="active" {% endif %}>
+                            <a href="/admin/data_types/view">Data Types</a>
                         </li>
                     </ul>
                 </div>

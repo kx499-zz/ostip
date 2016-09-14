@@ -50,6 +50,7 @@ def _valid_json(fields, data_dict):
 
 
 def _add_indicators(results, pending=False):
+    reasons = []
     inserted_indicators = []
     failed_indicators = []
     fields = ['event_id', 'control', 'indicators']
@@ -62,6 +63,9 @@ def _add_indicators(results, pending=False):
         type_array = data_types.get(data_type)
         if not type_array:
             app.logger.log("Bulk Indicator: Non-existent data type: %s can't process" % data_type)
+            reasons.append('Bad Data Type')
+            for ii in indicators:
+                failed_indicators.append([0,results['event_id'], ii['indicator']])
             continue
         regex = type_array[1]
         if regex:
@@ -83,6 +87,7 @@ def _add_indicators(results, pending=False):
                     ind_id = ind.id
                     inserted_indicators.append([ind_id, results['event_id'], val])
                 else:
+                    reasons.append('Validation Failed')
                     failed_indicators.append([0, results['event_id'], val])
 
     # commit and correlate
@@ -93,7 +98,8 @@ def _add_indicators(results, pending=False):
     except Exception, e:
         db.session.rollback()
         app.logger.warn('Error committing indicators: %s' % e)
+        reasons.append('Commit Failed')
         failed_indicators += inserted_indicators
         inserted_indicators = []
 
-    return {'success':len(inserted_indicators), 'failed':len(failed_indicators)}
+    return {'success':len(inserted_indicators), 'failed':len(failed_indicators), 'reason':';'.join(reasons)}

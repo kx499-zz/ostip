@@ -1,11 +1,11 @@
 from flask import render_template, flash, redirect, request, jsonify
 from sqlalchemy.exc import IntegrityError
 from app import app
-from .forms import EventForm, IndicatorForm, NoteForm
-from .models import Event, Indicator, Itype, Control, Links, Level, Likelihood, Source, Status, Tlp, Note, db
-from .utils import _load_related_data, _correlate, _enrich_data
+from .forms import EventForm, IndicatorForm, NoteForm, ItypeForm
+from feeder.logentry import  ResultsDict, LogEntry
+from .models import Event, Indicator, Itype, Control, Level, Likelihood, Source, Status, Tlp, Note, db
+from .utils import _valid_json, _add_indicators, _correlate
 import json
-import datetime
 from datatables import ColumnDT, DataTables
 
 
@@ -40,19 +40,16 @@ def event_add():
 @app.route('/event/view/<int:event_id>', methods=['GET', 'POST'])
 def event_view(event_id):
     def _indicator_add(form):
-        ind = Indicator(form.event_id.data,
-                        form.ioc.data,
-                        form.comment.data,
-                        form.control.data,
-                        form.itype.data)
-        db.session.add(ind)
-        try:
-            db.session.commit()
+        res_dict = ResultsDict(form.event_id.data,
+                    form.control.data.name,
+                    [form.itype.data.name]).new()
+        le = LogEntry(None, form.ioc.data, form.comment.data).new()
+        res_dict['indicators'][form.itype.data.name].append(le)
+        r = _add_indicators(res_dict, False)
+        if r.get('success', 0) == 1:
             res = '"%s" indicator submitted' % form.ioc.data
-            _correlate([[ind.id, form.event_id.data, ind.ioc]])
-        except IntegrityError:
-            db.session.rollback()
-            res = '"%s" indicator not submitted - duplicate' % form.ioc.data
+        else:
+            res = '"%s" indicator not submitted: %s' % (form.ioc.data, r.get('reason', 'N/A'))
         return res
 
     def _note_add(form):
@@ -73,7 +70,7 @@ def event_view(event_id):
             res = '"%s" Event Updated' % event.id
         except IntegrityError:
             db.session.rollback()
-            res = '"%s" Event Updated' % event.id
+            res = '"%s" Event Not Updated' % event.id
         return res
 
     ev = Event.query.get(event_id)
@@ -100,10 +97,37 @@ def event_view(event_id):
                            nt_form=nt_form)
 
 
+@app.route('/admin/data_types/<action>', methods=['GET', 'POST'])
+def admin_data_types(action):
+    form = ItypeForm()
+    print '%s' % request.form
+    if action == 'view':
+        data_types = Itype.query.all()
+        return render_template('type_edit.html', title='View/Edit Fields', data_types=data_types, form=form)
+    elif action == 'add':
+        dt = Itype(request.form['field_name'], request.form['field_regex'])
+        if dt.regex == 'None' or dt.regex == '':
+            dt.regex = None
+        db.session.add(dt)
+    elif action == 'edit':
+        dt = Itype.query.get(request.form['field_id'])
+        dt.name = request.form['field_name']
+        dt.regex = request.form['field_regex']
+        if dt.regex == 'None' or dt.regex == '':
+            dt.regex = None
+        db.session.add(dt)
+    elif action == 'delete':
+        dt = Itype.query.get(request.form['field_id'])
+        db.session.delete(dt)
+    else:
+        return redirect('/admin/data_types/view')
+    db.session.commit()
+    return redirect('/admin/data_types/view')
+
+
 @app.route('/admin/table/view', methods=['GET', 'POST'])
 def view_fields():
-    fields = {'Data Type': [Itype.query.all(), 'type'],
-              'Impact': [Level.query.all(), 'impact'],
+    fields = {'Impact': [Level.query.all(), 'impact'],
               'Likelihood': [Likelihood.query.all(), 'likelihood'],
               'Data Source': [Source.query.all(), 'source'],
               'Event Status': [Status.query.all(), 'status'],
@@ -115,8 +139,7 @@ def view_fields():
 
 @app.route('/admin/table/<table_name>/<action>', methods=['POST'])
 def view_edit_table(table_name, action):
-    objects = {'type': Itype(),
-               'impact': Level(),
+    objects = {'impact': Level(),
                'likelihood': Likelihood(),
                'source': Source(),
                'status': Status(),
@@ -190,9 +213,6 @@ def pending_data(status, event_id):
         query = db.session.query(Indicator).join(Control).join(Itype).filter(Indicator.pending == True)
 
     # instantiating a DataTable for the query and table needed
-
-    a = request.args.get('search[value]')
-    print a, type(a), type(1)
     rowTable = DataTables(request.args, Indicator, query, columns)
 
     # returns what is needed by DataTable
@@ -206,39 +226,21 @@ def pending_data(status, event_id):
 @app.route('/api/indicator/bulk_add', methods=['POST'])
 def indicator_bulk_add():
     req_keys = ('control', 'data_type', 'event_id', 'pending', 'data')
-    inserted_indicators = []
 
     try:
         pld = request.get_json(silent=True)
     except Exception, e:
         return json.dumps({'results': 'error', 'data': '%s' % e})
 
-    if all(k in pld for k in req_keys) and isinstance(pld['event_id'], (int, long)):
+    if _valid_json(req_keys, pld):
         # load related stuff
-        ioc_list, cont_id, type_id = _load_related_data(pld)
-
-        if not (ioc_list and cont_id and type_id):
-            return json.dumps({'results': 'error', 'data': 'Could not load Control, Type, or IOC list'})
-
-        # loop through data and add/update ioc
+        res_dict = ResultsDict(pld['event_id'], pld['control'], [pld['data_type']]).new()
         for val, desc in pld['data']:
-            ind_id = ioc_list.get(val)
-            if ind_id:
-                ind = Indicator.query.get(ind_id)
-                ind.last_seen = datetime.datetime.utcnow()
-            else:
-                ind = Indicator(pld['event_id'], val, desc, cont_id, type_id, pld['pending'], _enrich_data(pld))
-                db.session.add(ind)
-                db.session.flush()
-                ind_id = ind.id
-                if not pld['pending']:
-                    inserted_indicators.append([ind_id, pld['event_id'], val])
-        # commit
-        db.session.commit()
-        _correlate(inserted_indicators)
+            le = LogEntry(None, val, desc).new()
+            res_dict['indicators'][pld['data_type']].append(le)
 
-    res_json = {'results': 'success'}
-    return json.dumps(res_json)
+        results = _add_indicators(res_dict, pld['pending'])
+        return json.dumps(results)
 
 
 @app.errorhandler(404)
