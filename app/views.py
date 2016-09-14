@@ -248,6 +248,8 @@ def indicator_bulk_add():
 
         results = _add_indicators(res_dict, pld['pending'])
         return json.dumps(results)
+    else:
+        return json.dumps({'results': 'error', 'data': 'bad json'})
 
 
 @app.errorhandler(404)
