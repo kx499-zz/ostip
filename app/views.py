@@ -218,6 +218,13 @@ def pending_data(status, event_id):
     # returns what is needed by DataTable
     return jsonify(rowTable.output_result())
 
+@app.route('/feeds/config')
+def feed_config():
+    print app.config.get('FEED_CONFIG')
+    with open(app.config.get('FEED_CONFIG')) as F:
+        data = F.read()
+    return render_template('feed_config.html', title='Feed Config', data=data)
+
 
 ###
 # API Calls

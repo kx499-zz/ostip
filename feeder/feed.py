@@ -4,7 +4,7 @@ from app.utils import _add_indicators, _valid_json
 from app import app
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-FEED_CONFIG = os.path.join(basedir, 'feed.json')
+FEED_CONFIG = app.config.get('FEED_CONFIG')
 
 
 def _dynamic_load(class_name):

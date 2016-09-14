@@ -10,3 +10,5 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
 CELERY_BROKER_BACKEND = 'redis://127.0.0.1:6379'
+
+FEED_CONFIG = os.path.join(basedir, 'feeder/feed.json')
