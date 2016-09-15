@@ -81,9 +81,9 @@
             var tn = $(this).data('tablename');
             var row_id = $(this).closest('tr').find('th').eq(0).text();
             var row_name = $(this).closest('tr').find('td').eq(0).text();
-            var uri = '/admin/table/' + tn + '/edit'
-            $('#modal_form').attr('action', uri)
-            $('.modal-title').text('Edit Name')
+            var uri = '/admin/table/' + tn + '/edit';
+            $('#modal_form').attr('action', uri);
+            $('.modal-title').text('Edit Name');
             $('#field_id').val(row_id);
             $('#field_name').val(row_name);
             $('#field_name').prop("readonly", false);
@@ -94,9 +94,9 @@
             var tn = $(this).data('tablename');
             var row_id = $(this).closest('tr').find('th').eq(0).text();
             var row_name = $(this).closest('tr').find('td').eq(0).text();
-            var uri = '/admin/table/' + tn + '/delete'
-            $('#modal_form').attr('action', uri)
-            $('.modal-title').text('Confirm Delete')
+            var uri = '/admin/table/' + tn + '/delete';
+            $('#modal_form').attr('action', uri);
+            $('.modal-title').text('Confirm Delete');
             $('#field_id').val(row_id);
             $('#field_name').val(row_name);
             $('#field_name').prop("readonly", true);

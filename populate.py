@@ -32,7 +32,7 @@ for i in tlps:
     db.session.commit()
 
 for i in types:
-    obj = Itype()
+    obj = Itype(i, None)
     obj.name = i
     db.session.add(obj)
     db.session.commit()

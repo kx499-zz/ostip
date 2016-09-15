@@ -7,6 +7,8 @@ __pycache__/
 bin/
 include/
 lib/
+local/
+pip-selfcheck.json
 
 #app specific stuff
 app.db

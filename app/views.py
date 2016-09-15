@@ -144,7 +144,7 @@ def view_edit_table(table_name, action):
                'source': Source(),
                'status': Status(),
                'tlp': Tlp(),
-               'Control': Control()}
+               'control': Control()}
     if table_name in objects.keys():
         base_obj = objects[table_name]
     else:
