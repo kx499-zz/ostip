@@ -1,5 +1,5 @@
 To set up:  
-git clone https://blah  
+git clone https://github.com/kx499/ostip.git   
 virtualenv ostip  
 cd ostip  
 bin/pip install -r requirements.txt  
