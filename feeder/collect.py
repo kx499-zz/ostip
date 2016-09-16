@@ -18,6 +18,8 @@ class GetHttp:
     #     "verify_cert": true
     # }
 
+    # Returns an itertools.ifilter() object - essentially a generator
+
     def __init__(self, config):
         self.url = config.get('url')
         self.ignore_regex = config.get('ignore_regex')

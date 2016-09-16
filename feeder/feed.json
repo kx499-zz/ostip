@@ -1,26 +1,54 @@
-[{
-  "name": "SSL IPBL",
-  "frequency": "* * * * 1",
-  "event_id": 2,
-  "modules": {
-    "collect": {
-      "name": "collect.GetHttp",
-      "config": {
-        "url": "https://sslbl.abuse.ch/blacklist/sslipblacklist.csv",
-        "ignore_regex": "^#",
-        "user_agent": "OSTIP",
-        "referer": null,
-        "timeout": 20,
-        "verify_cert": true
+[
+  {
+    "name": "SSL IPBL",
+    "frequency": "* * * * 1",
+    "event_id": 1,
+    "modules": {
+      "collect": {
+        "name": "collect.GetHttp",
+        "config": {
+          "url": "https://sslbl.abuse.ch/blacklist/sslipblacklist.csv",
+          "ignore_regex": "^#",
+          "user_agent": "OSTIP",
+          "referer": null,
+          "timeout": 20,
+          "verify_cert": true
+        }
+      },
+      "parse": {
+        "name": "parse.ParseCsv",
+        "config":{
+          "fieldnames": ["indicator_ipv4", "port", "desc_1"],
+          "data_types": ["ipv4"],
+          "control": "Inbound"
+        }
       }
-    },
-    "parse": {
-      "name": "parse.ParseCsv",
-      "config":{
-        "fieldnames": ["indicator_ipv4", "port", "desc_1"],
-        "data_types": ["ipv4"],
-        "control": "Inbound"
+    }
+  },
+  {
+    "name": "alienvault",
+    "frequency": "* * * * 1",
+    "event_id": 4,
+    "modules": {
+      "collect": {
+        "name": "collect.GetHttp",
+        "config": {
+          "url": "https://reputation.alienvault.com/reputation.data",
+          "ignore_regex": "^#",
+          "user_agent": "OSTIP",
+          "referer": null,
+          "timeout": 20,
+          "verify_cert": true
+        }
+      },
+      "parse": {
+        "name": "parse.ParseText",
+        "config":{
+          "regex": "^(?P<indicator_ipv4>[^\#]+)\#\d\#\d\#(?P<desc_1>[^\#]+)\#",
+          "data_types": ["ipv4"],
+          "control": "Inbound"
+        }
       }
     }
   }
-}]
+]

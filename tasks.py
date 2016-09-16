@@ -18,7 +18,7 @@ def send_event_notification():
     ''' send mail to the recipients '''
     print "sent the mail"
 
-@periodic_task(run_every=(crontab(hour="*", minute="*", day_of_week="*")))
+@periodic_task(run_every=(crontab(hour="*", minute="1", day_of_week="*")))
 def pull_feeds():
     logger.info("Start task")
     now = datetime.now()

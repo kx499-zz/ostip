@@ -23,9 +23,10 @@ class Feed:
         try:
             with open(FEED_CONFIG) as F:
                 json_data = F.read()
+                json_data = json_data.replace('\\', '\\\\')
                 self.configs = json.loads(json_data)
         except Exception, e:
-            print 'Error Loading File: %s' % e
+            app.logger.warn('Error Loading File: %s' % e)
 
     def process_all(self):
         results = {}
@@ -39,27 +40,28 @@ class Feed:
 
             if 'parse' in modules.keys() and 'collect' in modules.keys():
                 try:
-                    print modules['collect'].get('name')
                     coll_cls = _dynamic_load(modules['collect'].get('name'))
                     parse_cls = _dynamic_load(modules['parse'].get('name'))
                 except Exception, e:
-                    print 'error loading classes: %s' % e
+                    app.logger.warn('error loading classes: %s' % e)
                     continue
 
                 collect_config = modules['collect'].get('config')
                 parse_config = modules['parse'].get('config')
                 if not collect_config and not parse_config:
-                    print 'error loading configs'
+                    app.logger.warn('error loading module configs')
                     continue
 
                 collector = coll_cls(collect_config)
                 data = collector.get()
+
                 if not data:
-                    print 'error loading data'
+                    app.logger.warn('error loading data from collector')
                     continue
 
                 parser = parse_cls(parse_config, event_id, data)
                 logs = parser.run()
+                #results[config.get('name', 'n/a')] = logs
                 results[config.get('name','n/a')] = _add_indicators(logs)
             elif 'custom' in modules.keys():
                 pass

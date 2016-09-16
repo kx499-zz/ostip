@@ -64,8 +64,47 @@ class ParseCsv:
 
 
 class ParseText:
+    # Example config will look like this
+    # Regex will need to have named capture groups the name are as follows:
+    #   indicator_<type> is ioc field,
+    #   date is date and optional,
+    #   desc_<int> are desc columns and optional
+    # data_types, control, and regex are required in json config
+    # "config": {
+    #     "data_types": ["ipv4"]
+    #     "control": "inbound"
+    #     "regex": "^(?P<date>[^,]+),(?P<indicator_ipv4>[^,]+),(?P<desc>[^,]+)"
+    # }
+    # data is a generator or a list of lines
 
-    def __init__(self):
-        pass
+    def __init__(self, config, event, data):
+        self.data_types = config.get('data_types', [])
+        self.control = config.get('control')
+        self.regex = config.get('regex')
+        self.event = event
+        self.data = data
+
+    def run(self):
+        rex = re.compile(self.regex)
+        results = ResultsDict(self.event, self.control, self.data_types).new()
+        for row in self.data:
+            m = rex.search(row)
+            if not m:
+                continue
+            matches = m.groupdict()
+            for data_type in self.data_types:
+                desc_val = []
+                ioc = matches.get('indicator_%s' % data_type)
+                if not ioc:
+                    continue
+                for i in xrange(1,10):
+                    tmp = matches.get('desc_%s' % i)
+                    if tmp:
+                        desc_val.append(tmp)
+                log_date = matches.get('date')
+                entry = LogEntry(log_date, ioc, ';'.join(desc_val)).new()
+                results['indicators'][data_type].append(entry)
+        return results
+
 
 
