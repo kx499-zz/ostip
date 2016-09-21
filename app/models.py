@@ -61,7 +61,7 @@ class Indicator(db.Model):
     itype = db.relationship('Itype', foreign_keys=itype_id)
     rel_indicators = db.relationship('Links', backref='indicator', lazy='dynamic')
 
-    __table_args__ = (db.UniqueConstraint("ioc", "event_id"), )
+    __table_args__ = (db.UniqueConstraint("ioc", "event_id", "itype_id", "control_id"), )
 
     @hybrid_property
     def rel_list(self):

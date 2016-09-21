@@ -4,7 +4,7 @@ import re
 import itertools
 import datetime
 import csv
-from logentry import ResultsDict, LogEntry
+from logentry import ResultsDict
 
 
 class ParseCsv:
@@ -46,7 +46,7 @@ class ParseCsv:
             **self.dialect
         )
 
-        results = ResultsDict(self.event, self.control, self.data_types).new()
+        results = ResultsDict(self.event, self.control)
         for row in reader:
             for data_type in self.data_types:
                 desc_val = []
@@ -58,8 +58,10 @@ class ParseCsv:
                     if tmp:
                         desc_val.append(tmp)
                 log_date = row.get('date')
-                entry = LogEntry(log_date, ioc, ';'.join(desc_val)).new()
-                results['indicators'][data_type].append(entry)
+                results.new_ind(data_type=data_type,
+                                indicator=ioc,
+                                date=log_date,
+                                description=';'.join(desc_val))
         return results
 
 
@@ -86,7 +88,7 @@ class ParseText:
 
     def run(self):
         rex = re.compile(self.regex)
-        results = ResultsDict(self.event, self.control, self.data_types).new()
+        results = ResultsDict(self.event, self.control)
         for row in self.data:
             m = rex.search(row)
             if not m:
@@ -94,6 +96,7 @@ class ParseText:
             matches = m.groupdict()
             for data_type in self.data_types:
                 desc_val = []
+                desc = None
                 ioc = matches.get('indicator_%s' % data_type)
                 if not ioc:
                     continue
@@ -102,8 +105,13 @@ class ParseText:
                     if tmp:
                         desc_val.append(tmp)
                 log_date = matches.get('date')
-                entry = LogEntry(log_date, ioc, ';'.join(desc_val)).new()
-                results['indicators'][data_type].append(entry)
+                if len(desc_val) > 0:
+                    print 'val: %s' % desc_val
+                    desc = ';'.join(desc_val)
+                results.new_ind(data_type=data_type,
+                                indicator=ioc,
+                                date=log_date,
+                                description=desc)
         return results
 
 

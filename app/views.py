@@ -2,7 +2,7 @@ from flask import render_template, flash, redirect, request, jsonify
 from sqlalchemy.exc import IntegrityError
 from app import app
 from .forms import EventForm, IndicatorForm, NoteForm, ItypeForm
-from feeder.logentry import  ResultsDict, LogEntry
+from feeder.logentry import  ResultsDict
 from .models import Event, Indicator, Itype, Control, Level, Likelihood, Source, Status, Tlp, Note, db
 from .utils import _valid_json, _add_indicators, _correlate
 import json
@@ -41,10 +41,11 @@ def event_add():
 def event_view(event_id):
     def _indicator_add(form):
         res_dict = ResultsDict(form.event_id.data,
-                    form.control.data.name,
-                    [form.itype.data.name]).new()
-        le = LogEntry(None, form.ioc.data, form.comment.data).new()
-        res_dict['indicators'][form.itype.data.name].append(le)
+                    form.control.data.name)
+        res_dict.new_ind(data_type=form.itype.data.name,
+                         indicator=form.ioc.data,
+                         date=None,
+                         description=form.comment.data)
         r = _add_indicators(res_dict, False)
         if r.get('success', 0) == 1:
             res = '"%s" indicator submitted' % form.ioc.data
@@ -241,10 +242,12 @@ def indicator_bulk_add():
 
     if _valid_json(req_keys, pld):
         # load related stuff
-        res_dict = ResultsDict(pld['event_id'], pld['control'], [pld['data_type']]).new()
+        res_dict = ResultsDict(pld['event_id'], pld['control'])
         for val, desc in pld['data']:
-            le = LogEntry(None, val, desc).new()
-            res_dict['indicators'][pld['data_type']].append(le)
+            res_dict.new_ind(data_type=pld['data_type'],
+                             indicator=val,
+                             date=None,
+                             description=desc)
 
         results = _add_indicators(res_dict, pld['pending'])
         return json.dumps(results)

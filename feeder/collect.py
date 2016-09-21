@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import requests
-import logging
 import itertools
 import re
+import datetime
+from app import app
 
-LOG = logging.getLogger(__name__)
+LOG = app.logger
 
 
 class GetHttp:
@@ -17,7 +18,7 @@ class GetHttp:
     #     "timeout": 20,
     #     "verify_cert": true
     # }
-
+    # for dates you can embed < date format > in url string. so <%m_%d_%Y> would = 10_15_2016
     # Returns an itertools.ifilter() object - essentially a generator
 
     def __init__(self, config):
@@ -30,6 +31,20 @@ class GetHttp:
 
         if self.ignore_regex:
             self.ignore_regex = re.compile(self.ignore_regex)
+
+        if self.url:
+            m = re.search('\<(?P<fmt>[^\>]+)\>', self.url)
+            if m:
+                fmt = m.groupdict().get('fmt', '')
+                try:
+                    dt_str = datetime.datetime.now().strftime(fmt)
+                    self.url = re.sub('\<[^\>]+\>', dt_str, self.url)
+                except:
+                    LOG.warn('Error in date string replacement')
+                    raise
+
+
+
 
     def get(self):
         rkwargs = dict(
@@ -50,8 +65,7 @@ class GetHttp:
         try:
             r.raise_for_status()
         except:
-            LOG.debug('%s - exception in request: %s %s',
-                      self.url, r.status_code, r.content)
+            LOG.warn('%s - exception in request: %s %s', self.url, r.status_code, r.content)
             raise
 
         result = r.iter_lines()

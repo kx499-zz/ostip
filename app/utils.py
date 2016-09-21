@@ -1,26 +1,29 @@
 from app import db
 from app import app
 from .models import Indicator, Control, Itype, Links
+from feeder.logentry import ResultsDict
 import re
 
 
 def _load_related_data(data):
     ioc = {}
-    items = Indicator.query.filter_by(event_id=data['event_id']).all()
+    items = Indicator.query.filter_by(event_id=data.event_id).all()
     [ioc.update({item.ioc: item.id}) for item in items]
-    control = Control.query.filter_by(name=data['control']).first()
+
     data_types = {}
     d_items = Itype.query.all()
     [data_types.update({d_item.name: [d_item, d_item.regex]}) for d_item in d_items]
-    if 'data_type' in data.keys():
-        data_type = data_types.get(data['data_type'][0])
-        if not control and data_type:
-            raise Exception("Data Type or Control not found")
-        return ioc, control, data_type
-    else:
-        if not control:
-            raise Exception("Data Type or Control not found")
-        return ioc, control, data_types
+
+    control = Control.query.filter_by(name=data.control).first()
+    if not control:
+        raise Exception("Control not found")
+
+    for dt in data.data_types.keys():
+        data_type = data_types.get(dt)
+        if not data_type:
+            raise Exception("Data Type not found")
+
+    return ioc, control, data_types
 
 
 def _correlate(indicator_list):
@@ -53,42 +56,44 @@ def _add_indicators(results, pending=False):
     reasons = []
     inserted_indicators = []
     failed_indicators = []
-    fields = ['event_id', 'control', 'indicators']
-    if not _valid_json(fields, results):
-        app.logger.warn('Bad json passed to _add_indicators')
-        return {'success':len(inserted_indicators), 'failed':len(failed_indicators)}
+    updated_indicators = []
+    if not isinstance(results, ResultsDict):
+        app.logger.warn('Bad object passed to _add_indicators')
+        return {'success':len(inserted_indicators), 'failed':len(failed_indicators), 'reason':';'.join(reasons)}
 
-    ioc_list, cont_obj, data_types = _load_related_data(results)
-    for data_type, indicators in results['indicators'].iteritems():
-        type_array = data_types.get(data_type)
+    ioc_list, cont_obj, all_data_types = _load_related_data(results)
+    for data_type in results.data_types.keys():
+        type_array = all_data_types.get(data_type)
         if not type_array:
-            app.logger.log("Bulk Indicator: Non-existent data type: %s can't process" % data_type)
+            app.logger.warn("Bulk Indicator: Non-existent data type: %s can't process" % data_type)
             reasons.append('Bad Data Type')
-            for ii in indicators:
-                failed_indicators.append([0,results['event_id'], ii['indicator']])
+            failed_indicators.append([0, results.event_id, [i for i in results.data_types.get(data_type, {}).keys()]])
             continue
         regex = type_array[1]
         if regex:
             regex = re.compile(type_array[1])
         type_obj = type_array[0]
-        for i in indicators:
-            val = i['indicator']
-            dt = i['date']
-            desc = i['description']
+        indicators = results.data_types.get(data_type)
+        for i in indicators.keys():
+            print i
+            val = i
+            dt = indicators[i]['date']
+            desc = indicators[i]['description']
             ind_id = ioc_list.get(val)
             if ind_id:
                 ind = Indicator.query.get(ind_id)
                 ind.last_seen = dt
+                updated_indicators.append([ind_id, results.event_id, val])
             else:
                 if (regex and regex.match(val)) or regex is None:
-                    ind = Indicator(results['event_id'], val, desc, cont_obj, type_obj, pending, 'Not Processed')
+                    ind = Indicator(results.event_id, val, desc, cont_obj, type_obj, pending, 'Not Processed')
                     db.session.add(ind)
                     db.session.flush()
                     ind_id = ind.id
-                    inserted_indicators.append([ind_id, results['event_id'], val])
+                    inserted_indicators.append([ind_id, results.event_id, val])
                 else:
                     reasons.append('Validation Failed')
-                    failed_indicators.append([0, results['event_id'], val])
+                    failed_indicators.append([0, results.event_id, val])
 
     # commit and correlate
     try:
@@ -102,4 +107,4 @@ def _add_indicators(results, pending=False):
         failed_indicators += inserted_indicators
         inserted_indicators = []
 
-    return {'success':len(inserted_indicators), 'failed':len(failed_indicators), 'reason':';'.join(reasons)}
+    return {'success':len(inserted_indicators) + len(updated_indicators), 'failed':len(failed_indicators), 'reason':';'.join(reasons)}

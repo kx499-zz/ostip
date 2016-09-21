@@ -1,7 +1,7 @@
 [
   {
     "name": "SSL IPBL",
-    "frequency": "* * * * 1",
+    "frequency": "0",
     "event_id": 1,
     "modules": {
       "collect": {
@@ -27,7 +27,7 @@
   },
   {
     "name": "alienvault",
-    "frequency": "* * * * 1",
+    "frequency": "0,4,8,12,16,20",
     "event_id": 4,
     "modules": {
       "collect": {
@@ -47,6 +47,32 @@
           "regex": "^(?P<indicator_ipv4>[^\#]+)\#\d\#\d\#(?P<desc_1>[^\#]+)\#",
           "data_types": ["ipv4"],
           "control": "Inbound"
+        }
+      }
+    }
+  },
+    {
+    "name": "SpideyPig",
+    "frequency": "*",
+    "event_id": 8,
+    "modules": {
+      "collect": {
+        "name": "collect.GetHttp",
+        "config": {
+          "url": "https://www.spideypig.org/feeds/phantom_log_20160917.txt",
+          "ignore_regex": "^#",
+          "user_agent": "OSTIP",
+          "referer": null,
+          "timeout": 20,
+          "verify_cert": true
+        }
+      },
+      "parse": {
+        "name": "parse.ParseText",
+        "config":{
+          "regex": "(?P<indicator_url>http[s]?://(?P<indicator_domain>[^/]+)/[^\s]*)",
+          "data_types": ["url", "domain"],
+          "control": "Outbound"
         }
       }
     }

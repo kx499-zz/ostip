@@ -2,6 +2,7 @@ import json
 import os
 from app.utils import _add_indicators, _valid_json
 from app import app
+import datetime
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 FEED_CONFIG = app.config.get('FEED_CONFIG')
@@ -28,15 +29,22 @@ class Feed:
         except Exception, e:
             app.logger.warn('Error Loading File: %s' % e)
 
-    def process_all(self):
+    def process_all(self, config_to_process=None):
         results = {}
         fields = ['name', 'frequency', 'event_id', 'modules']
+        date_hour = datetime.datetime.now().hour
         for config in self.configs:
             if not _valid_json(fields, config):
                 app.logger.warn('Bad config from feed.json')
                 continue
+            if config_to_process:
+                if not config.get('name') == config_to_process:
+                    continue
             modules = config.get('modules')
             event_id = config.get('event_id')
+            freq = config.get('frequency').split(',')
+            if not ('*' in freq  or date_hour in freq):
+                continue
 
             if 'parse' in modules.keys() and 'collect' in modules.keys():
                 try:
