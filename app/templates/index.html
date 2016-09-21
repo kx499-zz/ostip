@@ -12,6 +12,7 @@
                         <th>TLP</th>
                         <th>Confidence</th>
                         <th>Creation date</th>
+                        <th>Indicators</th>
                     </tr>
                 </thead>
 
@@ -23,6 +24,7 @@
                         <td>{{ event.tlp.name }}</td>
                         <td>{{ event.confidence }}</td>
                         <td>{{ event.created.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ event.indicators.count() }}</td>
                     </tr>
                 {% endfor %}
             </table>
