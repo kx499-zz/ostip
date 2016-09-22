@@ -1,3 +1,5 @@
+from sqlalchemy.orm import Session
+
 from app import db
 import datetime
 from sqlalchemy.ext.hybrid import hybrid_property

@@ -5,8 +5,6 @@ import re
 import datetime
 from app import app
 
-LOG = app.logger
-
 
 class GetHttp:
 
@@ -40,7 +38,7 @@ class GetHttp:
                     dt_str = datetime.datetime.now().strftime(fmt)
                     self.url = re.sub('\<[^\>]+\>', dt_str, self.url)
                 except:
-                    LOG.warn('Error in date string replacement')
+                    app.feed_logger.warn('Error in date string replacement')
                     raise
 
 
@@ -65,9 +63,9 @@ class GetHttp:
         try:
             r.raise_for_status()
         except:
-            LOG.warn('%s - exception in request: %s %s', self.url, r.status_code, r.content)
+            app.feed_logger.warn('%s - exception in request: %s %s', self.url, r.status_code, r.content)
             raise
-
+        app.feed_logger.info('%s - url loaded: %s', self.url, self.referer)
         result = r.iter_lines()
         if self.ignore_regex:
             result = itertools.ifilter(

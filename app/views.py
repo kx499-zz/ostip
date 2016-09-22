@@ -1,11 +1,10 @@
-from flask import render_template, flash, redirect, request, jsonify
+from flask import render_template, flash, redirect, request, jsonify, json, escape
 from sqlalchemy.exc import IntegrityError
 from app import app
 from .forms import EventForm, IndicatorForm, NoteForm, ItypeForm
 from feeder.logentry import  ResultsDict
 from .models import Event, Indicator, Itype, Control, Level, Likelihood, Source, Status, Tlp, Note, db
 from .utils import _valid_json, _add_indicators, _correlate
-import json
 from datatables import ColumnDT, DataTables
 
 
@@ -188,6 +187,10 @@ def indicator_pending():
         return redirect('/indicator/pending/view')
     return render_template('indicator_pending.html', title='Pending Indicators')
 
+@app.route('/indicator/search/view', methods=['GET', 'POST'])
+def indicator_search():
+    return render_template('indicator_search.html', title='Search Indicators')
+
 
 @app.route('/indicator/<status>/data/<int:event_id>')
 def pending_data(status, event_id):
@@ -202,22 +205,33 @@ def pending_data(status, event_id):
     columns.append(ColumnDT('enrich'))
     columns.append(ColumnDT('first_seen'))
 
+    base_query = db.session.query(Indicator).join(Control).join(Itype)
+
     if status == 'pending':
         columns.append(ColumnDT('event_id'))
         columns.append(ColumnDT('event.name'))
-        query = db.session.query(Indicator).join(Control).join(Event).join(Itype).filter(Indicator.pending == True)
+        query = base_query.join(Event).filter(Indicator.pending == True)
+    elif status == 'search':
+        columns.append(ColumnDT('event_id'))
+        columns.append(ColumnDT('event.name'))
+        query = base_query.join(Event).filter(Indicator.pending == False)
     elif status == 'approved':
         columns.append(ColumnDT('last_seen'))
         columns.append(ColumnDT('rel_list'))
-        query = db.session.query(Indicator).join(Control).join(Itype).filter(Indicator.event_id == event_id).filter(Indicator.pending == False )
+        query = base_query.filter(Indicator.event_id == event_id).filter(Indicator.pending == False )
     else:
-        query = db.session.query(Indicator).join(Control).join(Itype).filter(Indicator.pending == True)
+        query = base_query.filter(Indicator.pending == True)
 
-    # instantiating a DataTable for the query and table needed
     rowTable = DataTables(request.args, Indicator, query, columns)
 
-    # returns what is needed by DataTable
-    return jsonify(rowTable.output_result())
+    #xss catch just to be safe
+    res = rowTable.output_result()
+    for item in res['data']:
+        for k,v in item.iteritems():
+            item[k] = escape(v)
+
+    return jsonify(res)
+
 
 @app.route('/feeds/config')
 def feed_config():
@@ -230,6 +244,41 @@ def feed_config():
 ###
 # API Calls
 ###
+@app.route('/api/event/add', methods=['POST'])
+def api_event_add():
+    req_keys = ('name', 'details', 'confidence', 'source', 'tlp', 'impact', 'likelihood')
+
+    try:
+        pld = request.get_json(silent=True)
+    except Exception, e:
+        return json.dumps({'results': 'error', 'data': '%s' % e})
+
+    if _valid_json(req_keys, pld):
+        impact = Level.query.filter(Level.name == pld['impact']).first()
+        likelihood = Likelihood.query.filter(Likelihood.name == pld['likelihood']).first()
+        source = Source.query.filter(Source.name == pld['source']).first()
+        tlp = Tlp.query.filter(Tlp.name == pld['tlp']).first()
+        if not (impact and likelihood and source and tlp):
+            return json.dumps({'results': 'error', 'data': 'impact, likelihood, source, or tlp not found'})
+
+        try:
+            confidence = int(pld['confidence'])
+            if confidence < 0 or  confidence > 100:
+                raise Exception
+        except Exception, e:
+            return json.dumps({'results': 'error', 'data': 'confidence was not a number between 0 and 100'})
+
+        ev = Event(pld['name'], pld['details'], source, tlp, impact, likelihood, confidence)
+        db.session.add(ev)
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return json.dumps({'results': 'error', 'data': 'Integrity error - Rolled back'})
+        return json.dumps({'results':'success', 'data':{'event_id': ev.id}})
+    else:
+        return json.dumps({'results': 'error', 'data': 'bad json'})
+
 
 @app.route('/api/indicator/bulk_add', methods=['POST'])
 def indicator_bulk_add():
@@ -250,7 +299,7 @@ def indicator_bulk_add():
                              description=desc)
 
         results = _add_indicators(res_dict, pld['pending'])
-        return json.dumps(results)
+        return json.dumps({'results': 'success', 'data': results})
     else:
         return json.dumps({'results': 'error', 'data': 'bad json'})
 

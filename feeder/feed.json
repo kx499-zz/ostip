@@ -50,31 +50,5 @@
         }
       }
     }
-  },
-    {
-    "name": "SpideyPig",
-    "frequency": "*",
-    "event_id": 8,
-    "modules": {
-      "collect": {
-        "name": "collect.GetHttp",
-        "config": {
-          "url": "https://www.spideypig.org/feeds/phantom_log_20160917.txt",
-          "ignore_regex": "^#",
-          "user_agent": "OSTIP",
-          "referer": null,
-          "timeout": 20,
-          "verify_cert": true
-        }
-      },
-      "parse": {
-        "name": "parse.ParseText",
-        "config":{
-          "regex": "(?P<indicator_url>http[s]?://(?P<indicator_domain>[^/]+)/[^\s]*)",
-          "data_types": ["url", "domain"],
-          "control": "Outbound"
-        }
-      }
-    }
   }
 ]

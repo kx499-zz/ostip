@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block extra_stylesheets %}
+  <link href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/select/1.2.0/css/select.dataTables.min.css" rel="stylesheet">
+  <link href="https://gyrocode.github.io/jquery-datatables-checkboxes/1.0.3/css/dataTables.checkboxes.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="lead">Pending Indicators</h1>
+            <table id="dt_110x" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Indicator</th>
+                        <th>Type</th>
+                        <th>Control</th>
+                        <th>Comment</th>
+                        <th>Enrich</th>
+                        <th>Creation date</th>
+                        <th>Event Id</th>
+                        <th>Event</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+  <script src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/select/1.2.0/js/dataTables.select.min.js"></script>
+  <script src="https://gyrocode.github.io/jquery-datatables-checkboxes/1.0.3/js/dataTables.checkboxes.min.js"></script>
+  <script type="text/javascript" charset="utf-8">
+    $(document).ready(function(){
+        var table = $('#dt_110x').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: "{{ url_for('pending_data', status='search', event_id=0) }}",
+            deferRender: true,
+            select: {
+                style:    'multi'
+            },
+            order: [[ 1, 'asc' ]]
+        });
+    });
+  </script>
+{% endblock %}

@@ -5,6 +5,7 @@ import itertools
 import datetime
 import csv
 from logentry import ResultsDict
+from app import app
 
 
 class ParseCsv:
@@ -40,6 +41,8 @@ class ParseCsv:
         }
 
     def run(self):
+        count = 0
+        app.feed_logger.info("Processing ParseCsv")
         reader = csv.DictReader(
             self.data,
             fieldnames=self.fieldnames,
@@ -62,6 +65,8 @@ class ParseCsv:
                                 indicator=ioc,
                                 date=log_date,
                                 description=';'.join(desc_val))
+            count += 1
+        app.feed_logger.info("ParseCsv processed %s rows", count)
         return results
 
 
@@ -87,11 +92,14 @@ class ParseText:
         self.data = data
 
     def run(self):
+        count = 0
+        app.feed_logger.info("Processing ParseText")
         rex = re.compile(self.regex)
         results = ResultsDict(self.event, self.control)
         for row in self.data:
             m = rex.search(row)
             if not m:
+                app.feed_logger.warn("Row did not match regex: %s", row)
                 continue
             matches = m.groupdict()
             for data_type in self.data_types:
@@ -99,6 +107,7 @@ class ParseText:
                 desc = None
                 ioc = matches.get('indicator_%s' % data_type)
                 if not ioc:
+                    app.feed_logger.warn("no indicator found for: %s", data_type)
                     continue
                 for i in xrange(1,10):
                     tmp = matches.get('desc_%s' % i)
@@ -112,6 +121,8 @@ class ParseText:
                                 indicator=ioc,
                                 date=log_date,
                                 description=desc)
+            count += 1
+        app.feed_logger.info("ParseText processed %s lines", count)
         return results
 
 

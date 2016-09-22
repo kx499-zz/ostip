@@ -47,7 +47,11 @@ def _valid_json(fields, data_dict):
     if all(k in data_dict for k in fields):
         for field in fields:
             if re.search('_id$', field):
-                return True
+                try:
+                    int(data_dict[field])
+                except Exception:
+                    return False
+        return True
 
     return False
 
@@ -75,7 +79,6 @@ def _add_indicators(results, pending=False):
         type_obj = type_array[0]
         indicators = results.data_types.get(data_type)
         for i in indicators.keys():
-            print i
             val = i
             dt = indicators[i]['date']
             desc = indicators[i]['description']
