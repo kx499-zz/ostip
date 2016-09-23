@@ -1,5 +1,8 @@
 #!../bin/python
 import requests
+
+
+
 indicator_json = {
   "event_id": 3,
   "control": "Inbound",
@@ -16,6 +19,17 @@ event_json = {
   "tlp": "Amber",
   "impact": "Low",
   "likelihood":"Low"
+}
+
+
+ind_get_json = {
+    "fields": [{
+        "field": "confidence",  # confidence, ioc, last_seen, first_seen
+        "operator": "Some text",  # eq, lt, gt, like
+        "val": 90
+    }],
+    "operator": "or", #or, and
+    "pending": True
 }
 
 res = requests.post('http://localhost:5000/api/indicator/bulk_add', json=indicator_json)

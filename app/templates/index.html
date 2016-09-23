@@ -1,4 +1,11 @@
 {% extends "base.html" %}
+
+{% block extra_stylesheets %}
+  <link href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/select/1.2.0/css/select.dataTables.min.css" rel="stylesheet">
+  <link href="https://gyrocode.github.io/jquery-datatables-checkboxes/1.0.3/css/dataTables.checkboxes.css" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
     <div class="row">
         <div class="col-md-12">
@@ -8,6 +15,7 @@
                     <tr>
                         <th>#</th>
                         <th>Name</th>
+                        <th>Status</th>
                         <th>Source</th>
                         <th>TLP</th>
                         <th>Confidence</th>
@@ -15,19 +23,32 @@
                         <th>Indicators</th>
                     </tr>
                 </thead>
-
-                {% for event in events %}
-                    <tr>
-                        <th scope="row"><a href="/event/view/{{ event.id }}">{{ event.id }}</a></th>
-                        <td>{{ event.name }}</td>
-                        <td>{{ event.source.name }}</td>
-                        <td>{{ event.tlp.name }}</td>
-                        <td>{{ event.confidence }}</td>
-                        <td>{{ event.created.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ event.indicators.count() }}</td>
-                    </tr>
-                {% endfor %}
+                <tbody></tbody>
             </table>
         </div>
     </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+  <script src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/select/1.2.0/js/dataTables.select.min.js"></script>
+  <script src="https://gyrocode.github.io/jquery-datatables-checkboxes/1.0.3/js/dataTables.checkboxes.min.js"></script>
+  <script type="text/javascript" charset="utf-8">
+    $(document).ready(function(){
+        var table = $('#event_table').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: "{{ url_for('event_data', status='all') }}",
+            deferRender: true,
+            columnDefs: [ {
+                targets:   0,
+                "data": null,
+                "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
+                    var links = "<a href='/event/view/" + oData[0] + "'>" + oData[0] + "</a> ";
+                    $(nTd).html(links);
+                 }
+            } ]
+        });
+    });
+  </script>
 {% endblock %}

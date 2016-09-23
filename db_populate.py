@@ -5,7 +5,11 @@ from app.models import Control, Level, Itype, Tlp, Source, Likelihood, Status
 controls = ["Inbound", "Outbound"]
 levels = ["None", "Low", "Medium", "High"]
 tlps = ["White", "Green", "Amber", "Red"]
-types = ["ipv4", "domain"]
+types = [["ipv4","^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"],
+         ["domain", "^(?:[-A-Za-z0-9]+\.)+[A-Za-z]{2,12}$"],
+         ["md5", "^[a-fA-F0-9]{32}$"],
+         ["sha256", "^[A-Fa-f0-9]{64}$"],
+         ["url", "^(http[s]?://(?:[-A-Za-z0-9]+\.)+[A-Za-z]{2,12}(/[^\s]+)?|(?:[-A-Za-z0-9]+\.)+[A-Za-z]{2,12}/[^\s]*)$"]]
 sources = ["Feed", "Email List", "Blog"]
 statuses = ["New", "Open", "Resolved"]
 
@@ -32,8 +36,7 @@ for i in tlps:
     db.session.commit()
 
 for i in types:
-    obj = Itype(i, None)
-    obj.name = i
+    obj = Itype(i[0], i[1])
     db.session.add(obj)
     db.session.commit()
 

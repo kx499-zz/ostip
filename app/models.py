@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app import db
 import datetime
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.sql import select, func
 
 
 class Event(db.Model):
@@ -27,6 +28,17 @@ class Event(db.Model):
     indicators = db.relationship('Indicator', backref='event', lazy='dynamic')
     rel_events = db.relationship('Links', backref='event', lazy='dynamic')
     notes = db.relationship('Note', backref='event', lazy='dynamic')
+
+    @hybrid_property
+    def indicator_count(self):
+        return self.indicators.count()
+
+    @indicator_count.expression
+    def indicator_count(cls):
+        return (select([func.count(Indicator.id)]).
+                where(Indicator.event_id == cls.id).
+                label("indicator_count")
+                )
 
     def __init__(self, name, details, source, tlp, impact, likelihood, confidence=50):
         self.name = name

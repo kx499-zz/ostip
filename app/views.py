@@ -5,13 +5,22 @@ from .forms import EventForm, IndicatorForm, NoteForm, ItypeForm
 from feeder.logentry import  ResultsDict
 from .models import Event, Indicator, Itype, Control, Level, Likelihood, Source, Status, Tlp, Note, db
 from .utils import _valid_json, _add_indicators, _correlate
-from datatables import ColumnDT, DataTables
+from .my_datatables import ColumnDT, DataTables
+
+
+def _count(chain):
+    ret = chain.count()
+    if ret:
+        return ret
+    else:
+        return chain
+
 
 
 @app.route('/')
 @app.route('/index')
 def index():
-    return render_template('index.html', title='Home', events=Event.query.all())
+    return render_template('index.html', title='Home')
 
 
 @app.route('/event/add', methods=['GET', 'POST'])
@@ -233,6 +242,38 @@ def pending_data(status, event_id):
     return jsonify(res)
 
 
+@app.route('/event/<status>/data')
+def event_data(status):
+    """Return server side data."""
+    # defining columns
+    columns = []
+    columns.append(ColumnDT('id'))
+    columns.append(ColumnDT('name'))
+    columns.append(ColumnDT('status.name'))
+    columns.append(ColumnDT('source.name'))
+    columns.append(ColumnDT('tlp.name'))
+    columns.append(ColumnDT('confidence'))
+    columns.append(ColumnDT('created'))
+    columns.append(ColumnDT('indicator_count'))
+
+    base_query = db.session.query(Event).join(Source).join(Tlp).join(Status)
+
+    if status in ['New', 'Open', 'Resolved']:
+        query = base_query.filter(Status.name == status)
+    else:
+        query = base_query
+
+    rowTable = DataTables(request.args, Event, query, columns)
+
+    #xss catch just to be safe
+    res = rowTable.output_result()
+    for item in res['data']:
+        for k,v in item.iteritems():
+            item[k] = escape(v)
+
+    return jsonify(res)
+
+
 @app.route('/feeds/config')
 def feed_config():
     print app.config.get('FEED_CONFIG')
@@ -303,6 +344,9 @@ def indicator_bulk_add():
     else:
         return json.dumps({'results': 'error', 'data': 'bad json'})
 
+@app.route('/api/indicator/get', methods=['POST'])
+def api_indicator_get():
+    req_keys = ('name', 'details', 'confidence', 'source', 'tlp', 'impact', 'likelihood')
 
 @app.errorhandler(404)
 def not_found_error(error):

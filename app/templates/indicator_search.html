@@ -41,6 +41,15 @@
             serverSide: true,
             ajax: "{{ url_for('pending_data', status='search', event_id=0) }}",
             deferRender: true,
+            columnDefs: [ {
+                targets:   7,
+                orderable: false,
+                "data": null,
+                "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
+                    var links = "<a href='/event/view/" + oData[7] + "'>" + oData[7] + "</a> ";
+                    $(nTd).html(links);
+                 }
+            } ],
             select: {
                 style:    'multi'
             },
