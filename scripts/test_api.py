@@ -23,13 +23,11 @@ event_json = {
 
 
 ind_get_json = {
-    "fields": [{
-        "field": "confidence",  # confidence, ioc, last_seen, first_seen
-        "operator": "Some text",  # eq, lt, gt, like
-        "val": 90
-    }],
-    "operator": "or", #or, and
-    "pending": True
+    "conditions": [{
+        "field": "confidence",  # confidence, ioc, last_seen, first_seen, desc
+        "operator": "gt",  # eq, lt, gt, like
+        "val": 50
+    }]
 }
 
 res = requests.post('http://localhost:5000/api/indicator/bulk_add', json=indicator_json)
@@ -40,6 +38,13 @@ else:
     print 'Something bad happened'
 
 res = requests.post('http://localhost:5000/api/event/add', json=event_json)
+print 'Event Add Results:'
+if res.ok:
+    print res.json()
+else:
+    print 'Something bad happened'
+
+res = requests.post('http://localhost:5000/api/indicator/get', json=ind_get_json)
 print 'Event Add Results:'
 if res.ok:
     print res.json()

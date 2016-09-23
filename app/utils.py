@@ -55,7 +55,6 @@ def _valid_json(fields, data_dict):
 
     return False
 
-
 def _add_indicators(results, pending=False):
     reasons = []
     inserted_indicators = []
@@ -111,3 +110,29 @@ def _add_indicators(results, pending=False):
         inserted_indicators = []
 
     return {'success':len(inserted_indicators) + len(updated_indicators), 'failed':len(failed_indicators), 'reason':';'.join(reasons)}
+
+
+def filter_query(query, conditions):
+    model_class = query._entities[0].mapper._identity_class # returns the query's Model
+    join_class = query._join_entities[0].mapper._identity_class
+    for cond in conditions:
+        key = cond.get('field')
+        op = cond.get('operator')
+        value = cond.get('val')
+
+        column = getattr(model_class, key, None) or getattr(join_class, key, None)
+        if not column:
+            raise Exception('Invalid filter column: %s' % key)
+        if op == 'in':
+            filt = column.in_(value.split(','))
+        else:
+            try:
+                attr = filter(lambda e: hasattr(column, e % op), ['%s', '%s_', '__%s__'])[0] % op
+            except IndexError:
+                raise Exception('Invalid filter operator: %s' % op)
+        if value == 'null':
+            value = None
+        filt = getattr(column, attr)(value)
+        print filt
+        query = query.filter(filt)
+        return query

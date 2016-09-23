@@ -4,7 +4,7 @@ from app import app
 from .forms import EventForm, IndicatorForm, NoteForm, ItypeForm
 from feeder.logentry import  ResultsDict
 from .models import Event, Indicator, Itype, Control, Level, Likelihood, Source, Status, Tlp, Note, db
-from .utils import _valid_json, _add_indicators, _correlate
+from .utils import _valid_json, _add_indicators, _correlate, filter_query
 from .my_datatables import ColumnDT, DataTables
 
 
@@ -346,7 +346,23 @@ def indicator_bulk_add():
 
 @app.route('/api/indicator/get', methods=['POST'])
 def api_indicator_get():
-    req_keys = ('name', 'details', 'confidence', 'source', 'tlp', 'impact', 'likelihood')
+    req_keys = ('conditions',)
+    req_keys2 = ('field', 'operator', 'val')
+    try:
+        pld = request.get_json(silent=True)
+    except Exception, e:
+        return json.dumps({'results': 'error', 'data': '%s' % e})
+
+    if not _valid_json(req_keys, pld):
+        return json.dumps({'results': 'error', 'data': 'Invalid json'})
+
+    for item in pld.get('conditions'):
+        if not _valid_json(req_keys2, item):
+            return json.dumps({'results': 'error', 'data': 'Invalid json'})
+
+    q = filter_query(Indicator.query.join(Event), pld.get('conditions'))
+    res = [item.as_dict() for item in q.all()]
+    return jsonify(res)
 
 @app.errorhandler(404)
 def not_found_error(error):
