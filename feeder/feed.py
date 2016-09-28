@@ -3,6 +3,7 @@ import os
 from app.utils import _add_indicators, _valid_json
 from app import app
 import datetime
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 FEED_CONFIG = app.config.get('FEED_CONFIG')
@@ -27,7 +28,7 @@ class Feed:
                 json_data = json_data.replace('\\', '\\\\')
                 self.configs = json.loads(json_data)
         except Exception, e:
-            app.feed_logger.warn('Error Loading File: %s' % e)
+            app.logger.warn('Error Loading File: %s' % e)
 
     def process_all(self, config_to_process=None):
         results = {}
@@ -35,11 +36,12 @@ class Feed:
         date_hour = datetime.datetime.now().hour
         for config in self.configs:
             if not _valid_json(fields, config):
-                app.feed_logger.warn('Bad config from feed.json')
+                app.logger.warn('Bad config from feed.json')
                 continue
             if config_to_process:
                 if not config.get('name') == config_to_process:
                     continue
+            app.logger.info('Processing Feed: %s' % config['name'])
             modules = config.get('modules')
             event_id = config.get('event_id')
             freq = config.get('frequency').split(',')
@@ -51,20 +53,20 @@ class Feed:
                     coll_cls = _dynamic_load(modules['collect'].get('name'))
                     parse_cls = _dynamic_load(modules['parse'].get('name'))
                 except Exception, e:
-                    app.feed_logger.warn('error loading classes: %s' % e)
+                    app.logger.warn('error loading classes: %s' % e)
                     continue
 
                 collect_config = modules['collect'].get('config')
                 parse_config = modules['parse'].get('config')
                 if not collect_config and not parse_config:
-                    app.feed_logger.warn('error loading module configs')
+                    app.logger.warn('error loading module configs')
                     continue
 
                 collector = coll_cls(collect_config)
                 data = collector.get()
 
                 if not data:
-                    app.feed_logger.warn('error loading data from collector')
+                    app.logger.warn('error loading data from collector')
                     continue
 
                 parser = parse_cls(parse_config, event_id, data)
@@ -74,9 +76,9 @@ class Feed:
             elif 'custom' in modules.keys():
                 pass
             else:
-                app.feed_logger.warn('Bad config from feed.json in modules')
+                app.logger.warn('Bad config from feed.json in modules')
                 continue
-
+        app.logger.info('Processing Results: %s' % results)
         return results
 
 

@@ -1,0 +1,47 @@
+{% import "macros/form.html" as forms %}
+    <div class="modal fade" id="ConfigEditModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title">Edit Config</h4>
+          </div>
+          <div class="modal-body">
+            <form method="post" action="/feeds/config/" name="modal_form" id="modal_form">
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        {{ forms.render_field(form_edit.name) }}
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        {{ forms.render_field(form_edit.event) }}
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        {{ forms.render_field(form_edit.frequency) }}
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        {{ forms.render_field(form_edit.module) }}
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    </div>
+                </div>
+                {{ form_edit.index_id }}
+                {{ form_edit.hidden_tag() }}
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->

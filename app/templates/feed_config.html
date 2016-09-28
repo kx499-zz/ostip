@@ -1,9 +1,101 @@
 {% extends "base.html" %}
 {% block content %}
+
+    {% include "modals/form_config_edit.html" %}
+
     <div class="row">
-        <div class="col-md-12">
-            <h1 class="lead">Current Feed Config</h1>
-            <pre>{{ data }}</pre>
-        </div>
+            <div class="col-md-12">
+                <h1 class="lead">{{ title }}</h1>
+                <button type="button" class="btn btn-primary" id="addButton" data-toggle="modal" data-target="#ConfigEditModal">Add New</button>
+                <table id="config_table" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Frequency</th>
+                            <th>Event</th>
+                            <th>Config</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    {% for dt in data %}
+                        <tr>
+                            <th scope="row" data-id="{{ loop.index0 }}">{{ dt['name'] }}</th>
+                            <td>{{ dt['frequency'] }}</td>
+                            <td data-id="{{ dt['event_id'] }}">{{ dt['event_name'] }}</td>
+                            <td><pre>{{ dt['modules'] }}</pre></td>
+                            <td data-tablename="data_type">
+                                <button type="button" id="editRow" class="btn btn-primary" data-toggle="modal" data-target="#ConfigEditModal">Edit</button>
+                                <button type="button" id="delRow" class="btn btn-primary" data-toggle="modal" data-target="#ConfigEditModal">Delete</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
     </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script type="text/javascript">
+
+        $(document).delegate('#addButton', 'click', function(){
+            $('.modal-title').text('Edit Config')
+            $('#modal_form').attr('action', '/feeds/config/add')
+
+            $('#name').prop("readonly", false);
+            $('#event').prop("readonly", false);
+            $('#module').prop("readonly", false);
+            $('#frequency').prop("readonly", false);
+            $('#name').val('');
+            $('#frequency').val('*');
+            $('#module').val('');
+        });
+
+
+        $(document).delegate('#editRow', 'click', function(){
+            var row_id = $(this).closest('tr').find('th').eq(0).data('id');
+            var row_name = $(this).closest('tr').find('th').eq(0).text();
+            var row_freq = $(this).closest('tr').find('td').eq(0).text();
+            var row_evt_id = $(this).closest('tr').find('td').eq(1).data('id');
+            var row_evt_name = $(this).closest('tr').find('td').eq(1).text();
+            var row_module = $(this).closest('tr').find('td').eq(2).text();
+
+            $('.modal-title').text('Edit Config')
+            $('#modal_form').attr('action', '/feeds/config/edit')
+
+            $('#name').prop("readonly", false);
+            $('#event').prop("readonly", false);
+            $('#module').prop("readonly", false);
+            $('#frequency').prop("readonly", false);
+
+            $('#index_id').val(row_id);
+            $('#name').val(row_name);
+            $('#frequency').val(row_freq);
+            $('#module').val(row_module);
+            $('#event').val(row_evt_id);
+        });
+
+        $(document).delegate('#delRow', 'click', function(){
+            var row_id = $(this).closest('tr').find('th').eq(0).data('id');
+            var row_name = $(this).closest('tr').find('th').eq(0).text();
+            var row_freq = $(this).closest('tr').find('td').eq(0).text();
+            var row_evt_id = $(this).closest('tr').find('td').eq(1).data('id');
+            var row_evt_name = $(this).closest('tr').find('td').eq(1).text();
+            var row_module = $(this).closest('tr').find('td').eq(2).text();
+
+            $('.modal-title').text('Delete Config')
+            $('#modal_form').attr('action', '/feeds/config/del')
+
+            $('#name').prop("readonly", true);
+            $('#event').prop("readonly", true);
+            $('#module').prop("readonly", true);
+            $('#frequency').prop("readonly", true);
+
+            $('#index_id').val(row_id);
+            $('#name').val(row_name);
+            $('#frequency').val(row_freq);
+            $('#module').val(row_module);
+            $('#event').val(row_evt_id);
+
+        });
+    </script>
 {% endblock %}

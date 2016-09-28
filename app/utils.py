@@ -1,7 +1,9 @@
 from app import db
 from app import app
-from .models import Indicator, Control, Itype, Links
+from .models import Indicator, Control, Itype, Links, Event
 from feeder.logentry import ResultsDict
+from whois import whois
+from ipwhois import IPWhois
 import re
 
 
@@ -37,11 +39,20 @@ def _correlate(indicator_list):
                 db.session.add(link2)
     db.session.commit()
 
-def _enrich_data(data):
-    results = None
-    if data['pending']:
-        #impliment
-        return "Not Implemented Yet"
+
+def _enrich_data(data_type, data, pend=True):
+    results = 'Not implemented yet'
+    if pend:
+        if data_type == 'ipv4':
+            obj = IPWhois(data)
+            q = obj.lookup_rdap(depth=1)
+            net = q.get('network', {})
+            results = '%s|%s' % (net.get('name'), net.get('cidr'))
+        elif data_type == 'domain':
+            q = whois(data)
+            results = '%s|%s|%s' % (q.get('registrar'), q.get('name'), q.get('emails'))
+
+    return results
 
 def _valid_json(fields, data_dict):
     if all(k in data_dict for k in fields):
@@ -55,13 +66,20 @@ def _valid_json(fields, data_dict):
 
     return False
 
-def _add_indicators(results, pending=False):
+
+def _add_indicators(results, pending=False, enrich_it=False):
     reasons = []
     inserted_indicators = []
     failed_indicators = []
     updated_indicators = []
     if not isinstance(results, ResultsDict):
         app.logger.warn('Bad object passed to _add_indicators')
+        reasons.append('Bad object passed to _add_indicators')
+        return {'success':len(inserted_indicators), 'failed':len(failed_indicators), 'reason':';'.join(reasons)}
+
+    if not Event.query.get(results.event_id):
+        app.logger.warn('Event ID %s doesnt exist' % results.event_id)
+        reasons.append('Event ID %s doesnt exist' % results.event_id)
         return {'success':len(inserted_indicators), 'failed':len(failed_indicators), 'reason':';'.join(reasons)}
 
     ioc_list, cont_obj, all_data_types = _load_related_data(results)
@@ -88,7 +106,8 @@ def _add_indicators(results, pending=False):
                 updated_indicators.append([ind_id, results.event_id, val])
             else:
                 if (regex and regex.match(val)) or regex is None:
-                    ind = Indicator(results.event_id, val, desc, cont_obj, type_obj, pending, 'Not Processed')
+                    enrich = _enrich_data(data_type, val, pending|enrich_it)
+                    ind = Indicator(results.event_id, val, desc, cont_obj, type_obj, pending, enrich)
                     db.session.add(ind)
                     db.session.flush()
                     ind_id = ind.id

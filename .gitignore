@@ -17,6 +17,7 @@ db_repository/
 .DS_Store
 redis-stable/
 *.log
+feeder/feed.json
 
 
 celerybeat-schedule

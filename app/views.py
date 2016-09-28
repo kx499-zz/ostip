@@ -1,7 +1,7 @@
 from flask import render_template, flash, redirect, request, jsonify, json, escape
 from sqlalchemy.exc import IntegrityError
 from app import app
-from .forms import EventForm, IndicatorForm, NoteForm, ItypeForm
+from .forms import EventForm, IndicatorForm, NoteForm, ItypeForm, FeedConfigForm
 from feeder.logentry import  ResultsDict
 from .models import Event, Indicator, Itype, Control, Level, Likelihood, Source, Status, Tlp, Note, db
 from .utils import _valid_json, _add_indicators, _correlate, filter_query
@@ -54,7 +54,7 @@ def event_view(event_id):
                          indicator=form.ioc.data,
                          date=None,
                          description=form.comment.data)
-        r = _add_indicators(res_dict, False)
+        r = _add_indicators(res_dict, False, True)
         if r.get('success', 0) == 1:
             res = '"%s" indicator submitted' % form.ioc.data
         else:
@@ -274,12 +274,75 @@ def event_data(status):
     return jsonify(res)
 
 
-@app.route('/feeds/config')
-def feed_config():
-    print app.config.get('FEED_CONFIG')
+@app.route('/feeds/config/<action>', methods=['GET', 'POST'])
+def feed_config(action):
     with open(app.config.get('FEED_CONFIG')) as F:
         data = F.read()
-    return render_template('feed_config.html', title='Feed Config', data=data)
+    data = json.loads(data.replace('\\', '\\\\'))
+    if action == 'view':
+        form_edit = FeedConfigForm()
+        for d in data:
+            e = Event.query.get(d['event_id'])
+            if not e:
+                pass
+            d['event_name'] = Event.query.get(d['event_id']).name
+            d['modules'] = json.dumps(d['modules'], indent=4, sort_keys=True).replace('\\\\', '\\')
+        return render_template('feed_config.html', title='Feed Config', data=data, form_edit=form_edit)
+
+    elif action == 'edit':
+        try:
+            idx = int(request.form['index_id'])
+            evt_id = int(request.form['event'])
+        except Exception:
+            flash('Error converting IDs to integers')
+            return redirect('/feeds/config/view')
+        d = data[idx]
+        d['name'] = request.form['name']
+        d['frequency'] = request.form['frequency']
+        d['event_id'] = evt_id
+        modules = request.form['module']
+        if modules:
+            try:
+                d['modules'] = json.loads(modules.replace('\\', '\\\\'))
+            except Exception, e:
+                flash('Invalid JSON for module config')
+                return redirect('/feeds/config/view')
+
+    elif action == 'add':
+        try:
+            evt_id = int(request.form['event'])
+        except Exception:
+            flash('Error converting ID to integer')
+            return redirect('/feeds/config/view')
+        d = dict()
+        d['name'] = request.form['name']
+        d['frequency'] = request.form['frequency']
+        d['event_id'] = evt_id
+        modules = request.form['module']
+        if modules:
+            try:
+                d['modules'] = json.loads(modules.replace('\\', '\\\\'))
+            except Exception, e:
+                flash('Invalid JSON for module config')
+                return redirect('/feeds/config/view')
+        data.append(d)
+
+    elif action == 'del':
+        try:
+            idx = int(request.form['index_id'])
+        except Exception:
+            flash('Error converting IDs to integers')
+            return redirect('/feeds/config/view')
+        data.pop(idx)
+
+    try:
+        json_data = json.dumps(data, indent=4, sort_keys=True)
+        with open(app.config.get('FEED_CONFIG'), 'w') as F:
+            F.write(json_data.replace('\\\\', '\\'))
+    except Exception, e:
+        flash('Error writing file: %s' % e)
+
+    return redirect('/feeds/config/view')
 
 
 ###

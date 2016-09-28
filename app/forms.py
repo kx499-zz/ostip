@@ -3,7 +3,22 @@ from wtforms import StringField, IntegerField, SelectField
 from wtforms.validators import DataRequired
 from wtforms.widgets import TextArea, HiddenInput
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
-from .models import Source, Tlp, Level, Itype, Control, Status, Likelihood
+from .models import Source, Tlp, Level, Itype, Control, Status, Likelihood, Event
+
+
+class FeedConfigForm(Form):
+    index_id = IntegerField(widget=HiddenInput())
+    name = StringField('Name', validators=[DataRequired()])
+    frequency = StringField('Frequency', validators=[DataRequired()])
+    event = QuerySelectField('Event',
+                                  query_factory=lambda: Event.query.join(Source).filter(Source.name == 'Feed'),
+                                  get_label='name')
+    module = details = StringField('Modules', widget=TextArea(), validators=[DataRequired()])
+
+
+
+
+
 
 
 class EventForm(Form):

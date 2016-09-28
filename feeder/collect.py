@@ -38,7 +38,7 @@ class GetHttp:
                     dt_str = datetime.datetime.now().strftime(fmt)
                     self.url = re.sub('\<[^\>]+\>', dt_str, self.url)
                 except:
-                    app.feed_logger.warn('Error in date string replacement')
+                    app.logger.warn('Error in date string replacement')
                     raise
 
 
@@ -51,7 +51,7 @@ class GetHttp:
             timeout=self.timeout,
             headers={ 'User-Agent': self.user_agent or 'OSTIP' }
         )
-
+        print self.verify_cert
         if self.referer:
             rkwargs['headers']['referer'] = self.referer
 
@@ -63,9 +63,9 @@ class GetHttp:
         try:
             r.raise_for_status()
         except:
-            app.feed_logger.warn('%s - exception in request: %s %s', self.url, r.status_code, r.content)
+            app.logger.warn('%s - exception in request: %s %s', self.url, r.status_code, r.content)
             raise
-        app.feed_logger.info('%s - url loaded: %s', self.url, self.referer)
+        app.logger.info('%s - url loaded: %s', self.url, self.referer)
         result = r.iter_lines()
         if self.ignore_regex:
             result = itertools.ifilter(

@@ -125,10 +125,11 @@
             serverSide: true,
             ajax: "{{ url_for('pending_data', status='approved', event_id=event.id) }}",
             deferRender: true,
-            searching: false,
+            searching: true,
             columnDefs: [ {
                 targets:   8,
                 orderable: false,
+                searchable: false,
                 "data": null,
                 "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
                     var arr = oData[8].split(",");
