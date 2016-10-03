@@ -7,4 +7,6 @@ if [ ! -d redis-stable/src ]; then
 fi
 cd redis-stable
 make
-src/redis-server
+if [ -z "$1" ]; then
+  src/redis-server
+fi
