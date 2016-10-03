@@ -23,6 +23,8 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", inline: <<-SHELL
     cd /opt/ostip
     ./db_create.py
+    touch feeder/feed.json
+    if [ -z `cat feeder/feed.json` ]; then echo "[]" > feeder/feed.json ; fi
   SHELL
   config.vm.provision "shell", run: 'always', inline: <<-SHELL
     cd /opt/ostip
