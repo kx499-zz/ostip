@@ -5,7 +5,8 @@ cd ostip
 bin/pip install -r requirements.txt  
 scripts/install-redis.sh  
 ./db_create.py
-  
+cp feeder/feed.json.example feeder/feed.json
+
 running:  
 ../redis-stable/src/redis-server # Note this is started in install-redis.sh, but in subsequent runs, it's required.
 bin/celery -A tasks.celery  worker --loglevel=info --beat  
