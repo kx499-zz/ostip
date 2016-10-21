@@ -140,7 +140,15 @@
                     console.log(arr);
                     $(nTd).html(links);
                  }
-            } ],
+            },
+             {
+                targets:   0,
+                "data": null,
+                "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
+                    var links = "<a href='/indicator/edit/" + oData[0] + "/view'>" + oData[0] + "</a> ";
+                    $(nTd).html(links);
+                 }
+            }],
             order: [[ 1, 'asc' ]]
         });
     });

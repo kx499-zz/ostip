@@ -74,6 +74,7 @@ class Indicator(db.Model):
     control = db.relationship('Control', foreign_keys=control_id)
     itype = db.relationship('Itype', foreign_keys=itype_id)
     rel_indicators = db.relationship('Links', backref='indicator', lazy='dynamic')
+    mitigations = db.relationship('Mitigation', backref='indicator', lazy='dynamic')
 
     __table_args__ = (db.UniqueConstraint("ioc", "event_id", "itype_id", "control_id"), )
 
@@ -131,6 +132,47 @@ class Note(db.Model):
 
     def __repr__(self):
         return '<Note %r>' % (self.details)
+
+
+class Mitigation(db.Model):
+    __tablename__ = "mitigation"
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column(db.String(255), nullable=False)
+    created = db.Column(db.DateTime, nullable=False)
+    ttl = db.Column(db.Integer, nullable=False)
+    destination_id = db.Column(db.Integer, db.ForeignKey('destination.id'), nullable=False)
+    indicator_id = db.Column(db.Integer, db.ForeignKey('indicator.id'), nullable=False)
+    pending = db.Column(db.Boolean, nullable=False)
+    active = db.Column(db.Boolean, nullable=False)
+
+    destination = db.relationship('Destination', foreign_keys=destination_id)
+
+
+    def __init__(self, destination_id, ttl, description):
+        self.created = datetime.datetime.utcnow()
+        self.pending = True
+        self.active = True
+        self.destination_id = destination_id
+        self.ttl = ttl
+        self.description = description
+
+
+    def __repr__(self):
+        return '<Mitigation %r>' % (self.id)
+
+
+class Destination(db.Model):
+    __tablename__ = "destination"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), nullable=False)
+    description = db.Column(db.String(255))
+    formatter = db.Column(db.String(64), nullable=False)
+
+    __table_args__ = (db.UniqueConstraint("name"),)
+
+    def __repr__(self):
+        return '<Destination %r>' % (self.name)
+
 
 class Tlp(db.Model):
     __tablename__ = "tlp"

@@ -1,47 +1,34 @@
 {% import "macros/form.html" as forms %}
-    <div class="modal fade" id="myEvModal" tabindex="-1" role="dialog">
+    <div class="modal fade" id="mitModal" tabindex="-1" role="dialog">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
-            <h4 class="modal-title">Edit Event</h4>
+            <h4 class="modal-title">Edit Mitigation</h4>
           </div>
           <div class="modal-body">
-            <form method="post" action="/event/view/{{ event.id }}" name="event">
+            <form method="post" action="" name="modal_form" id="modal_form">
                 <div class="form-group row">
                     <div class="col-md-10">
-                        {{ forms.render_field(ev_form.name) }}
-                    </div>
-                </div>
-                <div class="form-group row">
-                    <div class="col-md-12">
-                        {{ forms.render_field(ev_form.details) }}
+                        {{ forms.render_field(m_form.description) }}
                     </div>
                 </div>
                 <div class="form-group row">
                     <div class="col-md-6">
-                        {{ forms.render_field(ev_form.status) }}
+                        {{ forms.render_field(m_form.ttl) }}
                     </div>
                     <div class="col-md-6">
-                        {{ forms.render_field(ev_form.source) }}
-                    </div>
-                </div>
-                <div class="form-group row">
-                    <div class="col-md-6">
-                        {{ forms.render_field(ev_form.impact) }}
-                    </div>
-                    <div class="col-md-6">
-                        {{ forms.render_field(ev_form.likelihood) }}
+                        {{ forms.render_field(m_form.destination) }}
                     </div>
                 </div>
                 <div class="form-group row">
                     <div class="col-md-6">
-                        {{ forms.render_field(ev_form.confidence) }}
+                        {{ forms.render_field(m_form.pending) }}
                     </div>
                     <div class="col-md-6">
-                        {{ forms.render_field(ev_form.tlp) }}
+                        {{ forms.render_field(m_form.active) }}
                     </div>
                 </div>
                 <div class="form-group row">
@@ -49,7 +36,8 @@
                         <button type="submit" class="btn btn-primary">Save changes</button>
                     </div>
                 </div>
-                {{ ev_form.hidden_tag() }}
+                {{ m_form.hidden_tag() }}
+                {{ m_form.mit_id }}
             </form>
           </div>
           <div class="modal-footer">

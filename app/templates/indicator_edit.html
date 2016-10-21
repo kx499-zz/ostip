@@ -1,0 +1,145 @@
+<!-- extend from base layout -->
+{% extends "base.html" %}
+{% import "macros/form.html" as forms %}
+{% block content %}
+
+    {% include "modals/form_mitigation_add_edit.html" %}
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="lead">View/Edit Indicator</h1>
+            <form method="post" name="indicator">
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        <dl class="dl-horizontal">
+                            <dt>Value</dt>
+                            <dd>{{ indicator.ioc }}</dd>
+                            <dt>Data Type</dt>
+                            <dd>{{ indicator.itype.name }}</dd>
+                            <dt>Event</dt>
+                            <dd>{{ indicator.event.name }}</dd>
+                            <dt>First Seen</dt>
+                            <dd>{{ indicator.first_seen }}</dd>
+                            <dt>Last Seen</dt>
+                            <dd>{{ indicator.last_seen }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        {{ forms.render_field(form.comment) }}
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        {{ forms.render_field(form.control) }}
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-10">
+                        <button type="submit" name="submit" value="edit" class="btn btn-primary">Update</button>
+                        <button type="submit" name="submit" value="delete" class="btn btn-primary">Delete</button>
+                    </div>
+                </div>
+                {{ form.hidden_tag() }}
+            </form>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="lead">Mitigations</h1>
+            <button type="button" class="btn btn-primary" id="addButton" data-toggle="modal" data-target="#mitModal">Add New</button>
+            <table id="event_table" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Created</th>
+                        <th>Device</th>
+                        <th>TTL</th>
+                        <th>Description</th>
+                        <th>Pending</th>
+                    </tr>
+                </thead>
+                {% for m in indicator.mitigations %}
+                    <tr>
+                        <th scope="row">{{ m.id}}</th>
+                        <td>{{ m.created }}</td>
+                        <td data-id="{{ m.destination.id }}">{{ m.destination.name }}</td>
+                        <td>{{ m.ttl }}</td>
+                        <td>{{ m.description }}</td>
+                        <td>{{ m.pending }}</td>
+                        <td data-tablename="data_type">
+                            <button type="button" id="editRow" class="btn btn-primary" data-toggle="modal" data-target="#mitModal">Edit</button>
+                            <button type="button" id="delRow" class="btn btn-primary" data-toggle="modal" data-target="#mitModal">Delete</button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="lead">Enrichment</h1>
+        </div>
+    </div>
+
+
+    <script type="text/javascript">
+
+        $(document).delegate('#addButton', 'click', function(){
+            var uri = '/indicator/edit/{{ indicator.id }}/mitigation_add'
+            $('#modal_form').attr('action', uri)
+            $('#description').prop("readonly", false);
+            $('#ttl').prop("disabled", false);
+            $('#destination').prop("disabled", false);
+            $('#pending').prop("type", "hidden");
+            $('#active').prop("type", "hidden");
+            $('#description').val('');
+            $('#ttl').val('');
+            $('#destination').val('');
+            $('#mit_id').val('0');
+        });
+
+
+        $(document).delegate('#editRow', 'click', function(){
+            var row_id = $(this).closest('tr').find('th').eq(0).text();
+            var row_dest = $(this).closest('tr').find('td').eq(1).data('id');
+            var row_ttl = $(this).closest('tr').find('td').eq(2).text();
+            var row_desc = $(this).closest('tr').find('td').eq(3).text();
+            var uri = '/indicator/edit/{{ indicator.id }}/mitigation_edit';
+            $('#modal_form').attr('action', uri);
+            $('#description').prop("readonly", false);
+            $('#ttl').prop("disabled", false);
+            $('#destination').prop("disabled", false);
+            $('#pending').prop("type", "hidden");
+            $('#active').prop("type", "hidden");
+            $('#description').val(row_desc);
+            $('#ttl').val(row_ttl);
+            $('#destination').val(row_dest);
+            $('#mit_id').val(row_id);
+        });
+
+        $(document).delegate('#delRow', 'click', function(){
+            var row_id = $(this).closest('tr').find('th').eq(0).text();
+            var row_dest = $(this).closest('tr').find('td').eq(1).data('id');
+            var row_ttl = $(this).closest('tr').find('td').eq(2).text();
+            var row_desc = $(this).closest('tr').find('td').eq(3).text();
+            var uri = '/indicator/edit/{{ indicator.id }}/mitigation_del';
+            $('#modal_form').attr('action', uri);
+            $('#description').prop("readonly", true);
+            $('#pending').prop("type", "hidden");
+            $('#active').prop("type", "hidden");
+            $('#description').val(row_desc);
+            $('#ttl').val(row_ttl);
+            $('#destination').val(row_dest);
+            $('#mit_id').val(row_id);
+            $('#ttl').prop("disabled", true);
+            $('#destination').prop("disabled", true);
+        });
+
+        $("#modal_form").submit(function( event ) {
+            $('#ttl').prop("disabled", false);
+            $('#destination').prop("disabled", false);
+        });
+    </script>
+{% endblock %}
+

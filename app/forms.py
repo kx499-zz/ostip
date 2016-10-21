@@ -1,9 +1,9 @@
 from flask_wtf import Form
-from wtforms import StringField, IntegerField, SelectField
+from wtforms import StringField, IntegerField, SelectField, BooleanField
 from wtforms.validators import DataRequired
 from wtforms.widgets import TextArea, HiddenInput
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
-from .models import Source, Tlp, Level, Itype, Control, Status, Likelihood, Event
+from .models import Source, Tlp, Level, Itype, Control, Status, Likelihood, Event, Destination
 
 
 class FeedConfigForm(Form):
@@ -14,10 +14,6 @@ class FeedConfigForm(Form):
                                   query_factory=lambda: Event.query.join(Source).filter(Source.name == 'Feed'),
                                   get_label='name')
     module = details = StringField('Modules', widget=TextArea(), validators=[DataRequired()])
-
-
-
-
 
 
 
@@ -35,9 +31,23 @@ class EventForm(Form):
 class IndicatorForm(Form):
     event_id = IntegerField(widget=HiddenInput())
     ioc = StringField('IOC', validators=[DataRequired()])
-    comment = StringField('Comment', validators=[DataRequired()])
+    comment = StringField('Comment')
     control = QuerySelectField('Control Path', query_factory=lambda: Control.query, get_label='name')
     itype = QuerySelectField('Data Type', query_factory=lambda: Itype.query, get_label='name')
+
+class IndicatorEditForm(Form):
+    event_id = IntegerField(widget=HiddenInput())
+    comment = StringField('Comment')
+    control = QuerySelectField('Control Path', query_factory=lambda: Control.query, get_label='name')
+
+class MitigationForm(Form):
+    mit_id = IntegerField(widget=HiddenInput())
+    description = StringField('Description', validators=[DataRequired()])
+    ttl = SelectField('TTL', coerce=int)
+    destination = QuerySelectField('Destination', query_factory=lambda: Destination.query, get_label='name')
+    pending = BooleanField('Pending')
+    active = BooleanField('Active')
+
 
 
 class NoteForm(Form):

@@ -1,9 +1,9 @@
 from flask import render_template, flash, redirect, request, jsonify, json, escape
 from sqlalchemy.exc import IntegrityError
 from app import app
-from .forms import EventForm, IndicatorForm, NoteForm, ItypeForm, FeedConfigForm
+from .forms import EventForm, IndicatorForm, NoteForm, ItypeForm, FeedConfigForm, IndicatorEditForm, MitigationForm
 from feeder.logentry import  ResultsDict
-from .models import Event, Indicator, Itype, Control, Level, Likelihood, Source, Status, Tlp, Note, db
+from .models import Event, Indicator, Itype, Control, Level, Likelihood, Source, Status, Tlp, Note, Mitigation, db
 from .utils import _valid_json, _add_indicators, _correlate, filter_query
 from .my_datatables import ColumnDT, DataTables
 
@@ -14,6 +14,8 @@ def _count(chain):
         return ret
     else:
         return chain
+
+
 
 
 
@@ -28,7 +30,6 @@ def event_add():
     form = EventForm()
     form.confidence.choices = [(i, '%s' % i) for i in xrange(0, 100, 5)]
     if form.validate_on_submit():
-        flash('"%s" event submitted, Confidence=%s' % (form.name.data, form.confidence.data))
         ev = Event(form.name.data,
                    form.details.data,
                    form.source.data,
@@ -37,7 +38,12 @@ def event_add():
                    form.likelihood.data,
                    form.confidence.data)
         db.session.add(ev)
-        db.session.commit()
+        try:
+            db.session.commit()
+            flash('Event added')
+        except IntegrityError:
+            db.session.rollback()
+            flash('Commit Error')
         return redirect('/index')
     print(form.errors)
     return render_template('event_add.html',
@@ -55,6 +61,7 @@ def event_view(event_id):
                          date=None,
                          description=form.comment.data)
         r = _add_indicators(res_dict, False, True)
+        print r
         if r.get('success', 0) == 1:
             res = '"%s" indicator submitted' % form.ioc.data
         else:
@@ -106,6 +113,93 @@ def event_view(event_id):
                            nt_form=nt_form)
 
 
+@app.route('/indicator/pending/view', methods=['GET', 'POST'])
+def indicator_pending():
+    if request.method == 'POST':
+        update_list = [int(i) for i in request.form.getlist('selected')]
+        del_list = [int(i) for i in request.form.getlist('not_selected')]
+
+        upd_query = db.session.query(Indicator).filter(Indicator.id.in_(update_list))
+        upd_query.update({'pending':False}, synchronize_session=False)
+        del_query = db.session.query(Indicator).filter(Indicator.id.in_(del_list))
+        del_query.delete(synchronize_session=False)
+        try:
+            db.session.commit()
+            flash('Indicators updated')
+        except IntegrityError:
+            db.session.rollback()
+            flash('Commit Error')
+            return redirect('/indicator/pending/view')
+
+        ioc_query = Indicator.query.with_entities(Indicator.id, Indicator.event_id, Indicator.ioc)
+        ioc_list = ioc_query.filter(Indicator.id.in_(update_list)).all()
+        _correlate(ioc_list)
+        return redirect('/indicator/pending/view')
+
+
+    return render_template('indicator_pending.html', title='Pending Indicators')
+
+
+@app.route('/indicator/edit/<int:ind_id>/<action>', methods=['GET', 'POST'])
+def indicator_edit(ind_id, action):
+    i = Indicator.query.get(ind_id)
+    form = IndicatorEditForm(obj=i)
+    m_form = MitigationForm()
+    m_form.ttl.choices = [(c, '%s' % c) for c in [0,7,30,90]]
+    if request.method == 'POST' and action=='view' and form.validate_on_submit():
+        if request.form['submit'] == 'edit':
+            i.comment = form.comment.data
+            i.control = form.control.data
+            db.session.add(i)
+        elif request.form['submit'] == 'delete':
+            db.session.delete(i)
+        try:
+            db.session.commit()
+            flash("Indicator updated successfully")
+        except Exception, e:
+            db.session.rollback()
+            app.logger.warn("Error committing - rolled back %s" % e)
+            flash("Error committing - rolled back")
+        return redirect('/indicator/edit/%s/view' % ind_id)
+    elif request.method == 'POST' and action.startswith('mitigation') and m_form.validate_on_submit():
+        if action == 'mitigation_add':
+            print m_form.destination.data.id, m_form.ttl.data, m_form.description.data
+            mit = Mitigation(m_form.destination.data.id, m_form.ttl.data, m_form.description.data)
+            i.mitigations.append(mit)
+        elif action == 'mitigation_edit':
+            mit = Mitigation.query.get(m_form.mit_id.data)
+            if not mit:
+                flash("Mitigation doesn't exist")
+                return redirect('/indicator/edit/%s/view' % ind_id)
+            mit.ttl = m_form.ttl.data
+            mit.destination_id = m_form.destination.data.id
+            mit.description = m_form.description.data
+            db.session.add(mit)
+        elif action == 'mitigation_del':
+            print 'hit here'
+            mit = Mitigation.query.get(m_form.mit_id.data)
+            db.session.delete(mit)
+        else:
+            flash("Knock off the funny business....")
+            return redirect('/indicator/edit/%s/view' % ind_id)
+
+        try:
+            db.session.commit()
+            flash("Mitigation successfully updated/added")
+        except Exception, e:
+            db.session.rollback()
+            app.logger.warn("Error committing mitigation - rolled back %s" % e)
+            flash("Error committing - rolled back")
+        return redirect('/indicator/edit/%s/view' % ind_id)
+    print m_form.errors
+    return render_template('indicator_edit.html', title='Edit Indicator', form=form, m_form=m_form, indicator=i)
+
+
+@app.route('/indicator/search/view', methods=['GET', 'POST'])
+def indicator_search():
+    return render_template('indicator_search.html', title='Search Indicators')
+
+
 @app.route('/admin/data_types/<action>', methods=['GET', 'POST'])
 def admin_data_types(action):
     form = ItypeForm()
@@ -130,7 +224,12 @@ def admin_data_types(action):
         db.session.delete(dt)
     else:
         return redirect('/admin/data_types/view')
-    db.session.commit()
+    try:
+        db.session.commit()
+        flash('Data Types Updated')
+    except IntegrityError:
+        db.session.rollback()
+        flash('Commit Error')
     return redirect('/admin/data_types/view')
 
 
@@ -171,107 +270,14 @@ def view_edit_table(table_name, action):
         db.session.delete(item)
     else:
         return redirect('/admin/table/view')
-    db.session.commit()
-    flash('Successfully Updated - Action: %s; Table: %s' % (table_name, action))
+    try:
+        db.session.commit()
+        flash('Data Updated')
+    except IntegrityError:
+        db.session.rollback()
+        flash('Commit Error')
 
     return redirect('/admin/table/view')
-
-
-@app.route('/indicator/pending/view', methods=['GET', 'POST'])
-def indicator_pending():
-    if request.method == 'POST':
-        update_list = [int(i) for i in request.form.getlist('selected')]
-        del_list = [int(i) for i in request.form.getlist('not_selected')]
-
-        upd_query = db.session.query(Indicator).filter(Indicator.id.in_(update_list))
-        upd_query.update({'pending':False}, synchronize_session=False)
-        del_query = db.session.query(Indicator).filter(Indicator.id.in_(del_list))
-        del_query.delete(synchronize_session=False)
-        db.session.commit()
-
-        ioc_query = Indicator.query.with_entities(Indicator.id, Indicator.event_id, Indicator.ioc)
-        ioc_list = ioc_query.filter(Indicator.id.in_(update_list)).all()
-        _correlate(ioc_list)
-
-        return redirect('/indicator/pending/view')
-    return render_template('indicator_pending.html', title='Pending Indicators')
-
-@app.route('/indicator/search/view', methods=['GET', 'POST'])
-def indicator_search():
-    return render_template('indicator_search.html', title='Search Indicators')
-
-
-@app.route('/indicator/<status>/data/<int:event_id>')
-def pending_data(status, event_id):
-    """Return server side data."""
-    # defining columns
-    columns = []
-    columns.append(ColumnDT('id'))
-    columns.append(ColumnDT('ioc'))
-    columns.append(ColumnDT('itype.name'))
-    columns.append(ColumnDT('control.name'))
-    columns.append(ColumnDT('comment'))
-    columns.append(ColumnDT('enrich'))
-    columns.append(ColumnDT('first_seen'))
-
-    base_query = db.session.query(Indicator).join(Control).join(Itype)
-
-    if status == 'pending':
-        columns.append(ColumnDT('event_id'))
-        columns.append(ColumnDT('event.name'))
-        query = base_query.join(Event).filter(Indicator.pending == True)
-    elif status == 'search':
-        columns.append(ColumnDT('event_id'))
-        columns.append(ColumnDT('event.name'))
-        query = base_query.join(Event).filter(Indicator.pending == False)
-    elif status == 'approved':
-        columns.append(ColumnDT('last_seen'))
-        columns.append(ColumnDT('rel_list'))
-        query = base_query.filter(Indicator.event_id == event_id).filter(Indicator.pending == False )
-    else:
-        query = base_query.filter(Indicator.pending == True)
-
-    rowTable = DataTables(request.args, Indicator, query, columns)
-
-    #xss catch just to be safe
-    res = rowTable.output_result()
-    for item in res['data']:
-        for k,v in item.iteritems():
-            item[k] = escape(v)
-
-    return jsonify(res)
-
-
-@app.route('/event/<status>/data')
-def event_data(status):
-    """Return server side data."""
-    # defining columns
-    columns = []
-    columns.append(ColumnDT('id'))
-    columns.append(ColumnDT('name'))
-    columns.append(ColumnDT('status.name'))
-    columns.append(ColumnDT('source.name'))
-    columns.append(ColumnDT('tlp.name'))
-    columns.append(ColumnDT('confidence'))
-    columns.append(ColumnDT('created'))
-    columns.append(ColumnDT('indicator_count'))
-
-    base_query = db.session.query(Event).join(Source).join(Tlp).join(Status)
-
-    if status in ['New', 'Open', 'Resolved']:
-        query = base_query.filter(Status.name == status)
-    else:
-        query = base_query
-
-    rowTable = DataTables(request.args, Event, query, columns)
-
-    #xss catch just to be safe
-    res = rowTable.output_result()
-    for item in res['data']:
-        for k,v in item.iteritems():
-            item[k] = escape(v)
-
-    return jsonify(res)
 
 
 @app.route('/feeds/config/<action>', methods=['GET', 'POST'])
@@ -346,6 +352,82 @@ def feed_config(action):
 
 
 ###
+# DataTables Ajax Endpoints
+###
+@app.route('/indicator/<status>/data/<int:event_id>')
+def pending_data(status, event_id):
+    """Return server side data."""
+    # defining columns
+    columns = []
+    columns.append(ColumnDT('id'))
+    columns.append(ColumnDT('ioc'))
+    columns.append(ColumnDT('itype.name'))
+    columns.append(ColumnDT('control.name'))
+    columns.append(ColumnDT('comment'))
+    columns.append(ColumnDT('enrich'))
+    columns.append(ColumnDT('first_seen'))
+
+    base_query = db.session.query(Indicator).join(Control).join(Itype)
+
+    if status == 'pending':
+        columns.append(ColumnDT('event_id'))
+        columns.append(ColumnDT('event.name'))
+        query = base_query.join(Event).filter(Indicator.pending == True)
+    elif status == 'search':
+        columns.append(ColumnDT('event_id'))
+        columns.append(ColumnDT('event.name'))
+        query = base_query.join(Event).filter(Indicator.pending == False)
+    elif status == 'approved':
+        columns.append(ColumnDT('last_seen'))
+        columns.append(ColumnDT('rel_list'))
+        query = base_query.filter(Indicator.event_id == event_id).filter(Indicator.pending == False )
+    else:
+        query = base_query.filter(Indicator.pending == True)
+
+    rowTable = DataTables(request.args, Indicator, query, columns)
+
+    #xss catch just to be safe
+    res = rowTable.output_result()
+    for item in res['data']:
+        for k,v in item.iteritems():
+            item[k] = escape(v)
+
+    return jsonify(res)
+
+
+@app.route('/event/<status>/data')
+def event_data(status):
+    """Return server side data."""
+    # defining columns
+    columns = []
+    columns.append(ColumnDT('id'))
+    columns.append(ColumnDT('name'))
+    columns.append(ColumnDT('status.name'))
+    columns.append(ColumnDT('source.name'))
+    columns.append(ColumnDT('tlp.name'))
+    columns.append(ColumnDT('confidence'))
+    columns.append(ColumnDT('created'))
+    columns.append(ColumnDT('indicator_count'))
+
+    base_query = db.session.query(Event).join(Source).join(Tlp).join(Status)
+
+    if status in ['New', 'Open', 'Resolved']:
+        query = base_query.filter(Status.name == status)
+    else:
+        query = base_query
+
+    rowTable = DataTables(request.args, Event, query, columns)
+
+    #xss catch just to be safe
+    res = rowTable.output_result()
+    for item in res['data']:
+        for k,v in item.iteritems():
+            item[k] = escape(v)
+
+    return jsonify(res)
+
+
+###
 # API Calls
 ###
 @app.route('/api/event/add', methods=['POST'])
@@ -407,6 +489,7 @@ def indicator_bulk_add():
     else:
         return json.dumps({'results': 'error', 'data': 'bad json'})
 
+
 @app.route('/api/indicator/get', methods=['POST'])
 def api_indicator_get():
     req_keys = ('conditions',)
@@ -424,8 +507,8 @@ def api_indicator_get():
             return json.dumps({'results': 'error', 'data': 'Invalid json'})
 
     q = filter_query(Indicator.query.join(Event), pld.get('conditions'))
-    res = [item.as_dict() for item in q.all()]
-    return jsonify(res)
+
+
 
 @app.errorhandler(404)
 def not_found_error(error):
