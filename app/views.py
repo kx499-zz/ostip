@@ -4,7 +4,7 @@ from app import app
 from .forms import EventForm, IndicatorForm, NoteForm, ItypeForm, FeedConfigForm, IndicatorEditForm, MitigationForm
 from feeder.logentry import  ResultsDict
 from .models import Event, Indicator, Itype, Control, Level, Likelihood, Source, Status, Tlp, Note, Mitigation, db
-from .utils import _valid_json, _add_indicators, _correlate, filter_query
+from .utils import _valid_json, _add_indicators, _correlate, _enrich_data, filter_query
 from .my_datatables import ColumnDT, DataTables
 
 
@@ -150,6 +150,8 @@ def indicator_edit(ind_id, action):
         if request.form['submit'] == 'edit':
             i.comment = form.comment.data
             i.control = form.control.data
+            if form.update_enrich.data:
+                i.enrich, i.enrich_full = _enrich_data(i.itype.name, i.ioc, True)
             db.session.add(i)
         elif request.form['submit'] == 'delete':
             db.session.delete(i)

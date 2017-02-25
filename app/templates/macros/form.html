@@ -1,6 +1,6 @@
 {% macro render_field(field) %}
     {{ field.label }}
-    {{ field(class_="form-control form-control-warning") }}
+    {{ field(class_="form-control form-control-warning", **kwargs) }}
     {% for error in field.errors %}
         <div class="has-error"><span class="help-block">[{{ error }}]</span></div>
 

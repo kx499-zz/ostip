@@ -64,6 +64,7 @@ class Indicator(db.Model):
     ioc = db.Column(db.String(64), index=True, nullable=False)
     comment = db.Column(db.String(255))
     enrich = db.Column(db.String(255))
+    enrich_full = db.Column(db.Text())
     first_seen = db.Column(db.DateTime, nullable=False)
     last_seen = db.Column(db.DateTime, index=True, nullable=False)
     pending = db.Column(db.Boolean, nullable=False)
@@ -82,7 +83,7 @@ class Indicator(db.Model):
     def rel_list(self):
         return ','.join([str(i.rel_event_id) for i in self.rel_indicators])
 
-    def __init__(self, event_id, ioc, comment, control, itype, pending=False, enrich=None):
+    def __init__(self, event_id, ioc, comment, control, itype, pending=False, enrich=None, enrich_full=None):
         self.event_id = event_id
         self.ioc = ioc
         self.comment = comment
@@ -90,6 +91,7 @@ class Indicator(db.Model):
         self.itype = itype
         self.pending = pending
         self.enrich = enrich
+        self.enrich_full = enrich_full
         self.first_seen = datetime.datetime.utcnow()
         self.last_seen = datetime.datetime.utcnow()
 

@@ -4,6 +4,7 @@ from .models import Indicator, Control, Itype, Links, Event
 from feeder.logentry import ResultsDict
 from whois import whois
 from ipwhois import IPWhois
+import pprint
 import re
 
 
@@ -42,17 +43,20 @@ def _correlate(indicator_list):
 
 def _enrich_data(data_type, data, pend=True):
     results = 'Not implemented yet'
+    full = 'Not implemented yet'
     if pend:
         if data_type == 'ipv4':
             obj = IPWhois(data)
             q = obj.lookup_rdap(depth=1)
             net = q.get('network', {})
             results = '%s|%s' % (net.get('name'), net.get('cidr'))
+            full = pprint.pformat(q)
         elif data_type == 'domain':
             q = whois(data)
             results = '%s|%s|%s' % (q.get('registrar'), q.get('name'), q.get('emails'))
+            full = q.text
 
-    return results
+    return results, full
 
 def _valid_json(fields, data_dict):
     if all(k in data_dict for k in fields):
@@ -106,8 +110,8 @@ def _add_indicators(results, pending=False, enrich_it=False):
                 updated_indicators.append([ind_id, results.event_id, val])
             else:
                 if (regex and regex.match(val)) or regex is None:
-                    enrich = _enrich_data(data_type, val, pending|enrich_it)
-                    ind = Indicator(results.event_id, val, desc, cont_obj, type_obj, pending, enrich)
+                    enrich, enrich_full = _enrich_data(data_type, val, pending|enrich_it)
+                    ind = Indicator(results.event_id, val, desc, cont_obj, type_obj, pending, enrich, enrich_full)
                     db.session.add(ind)
                     db.session.flush()
                     ind_id = ind.id

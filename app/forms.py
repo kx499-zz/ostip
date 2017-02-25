@@ -35,10 +35,14 @@ class IndicatorForm(Form):
     control = QuerySelectField('Control Path', query_factory=lambda: Control.query, get_label='name')
     itype = QuerySelectField('Data Type', query_factory=lambda: Itype.query, get_label='name')
 
+
 class IndicatorEditForm(Form):
     event_id = IntegerField(widget=HiddenInput())
     comment = StringField('Comment')
     control = QuerySelectField('Control Path', query_factory=lambda: Control.query, get_label='name')
+    enrich = StringField('Enrich Summary')
+    enrich_full = StringField('Enrich Details', widget=TextArea())
+    update_enrich = BooleanField('Update Enrichment')
 
 class MitigationForm(Form):
     mit_id = IntegerField(widget=HiddenInput())
