@@ -24,7 +24,7 @@ Vagrant.configure(2) do |config|
     cd /opt/ostip
     ./db_create.py
     touch feeder/feed.json
-    if [ -z `cat feeder/feed.json` ]; then echo "[]" > feeder/feed.json ; fi
+    if [ -z `cat feeder/feed.json` ]; then cp feeder/feed.json.example feeder/feed.json ; fi
   SHELL
   config.vm.provision "shell", run: 'always', inline: <<-SHELL
     cd /opt/ostip
